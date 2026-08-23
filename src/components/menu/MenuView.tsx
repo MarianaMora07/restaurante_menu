@@ -64,24 +64,24 @@ export function MenuView({ categories, dishes, promos = [], onBack }: MenuViewPr
     <div className="flex min-h-dvh flex-col bg-brand-darker">
       {/* Encabezado unificado: botón de retorno + tabs siempre visibles */}
       <header className="sticky top-0 z-40 bg-brand-darker/90 shadow-elevated backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 pt-2.5 sm:px-6">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 pt-2 sm:px-6 sm:pt-2.5">
           {onBack ? (
             <button
               type="button"
               onClick={onBack}
-              className="flex items-center gap-2 rounded-full py-2 pr-4 pl-3 font-heading text-sm font-semibold text-brand-light ring-1 ring-white/15 transition-all hover:bg-white/[0.07] hover:text-brand-primary hover:ring-brand-primary/40 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              className="flex items-center gap-1.5 rounded-full py-1.5 pr-3 pl-2.5 font-heading text-[13px] font-semibold text-brand-light ring-1 ring-white/15 transition-all hover:bg-white/[0.07] hover:text-brand-primary hover:ring-brand-primary/40 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:gap-2 sm:py-2 sm:pr-4 sm:pl-3 sm:text-sm"
             >
-              <ArrowLeft className="size-4" aria-hidden />
+              <ArrowLeft className="size-3.5 sm:size-4" aria-hidden />
               Volver al Inicio
             </button>
           ) : (
             <span />
           )}
-          <span className="font-display text-base font-bold tracking-tight text-brand-light/80">
+          <span className="hidden max-w-[38vw] truncate font-display text-sm font-bold tracking-tight text-brand-light/80 min-[380px]:block sm:text-base">
             {siteConfig.name}
           </span>
         </div>
-        <div className="h-1.5" aria-hidden />
+        <div aria-hidden className="h-1 sm:h-1.5" />
         <CategoryTabs
           categories={categories}
           activeCategory={activeCategory}
@@ -91,7 +91,7 @@ export function MenuView({ categories, dishes, promos = [], onBack }: MenuViewPr
 
       <main
         id="menu"
-        className="mx-auto w-full max-w-5xl scroll-mt-28 flex-1 px-4 pt-8 pb-20 sm:px-6"
+        className="mx-auto w-full max-w-5xl scroll-mt-28 flex-1 px-4 pt-6 pb-20 sm:px-6 sm:pt-8"
       >
         {visiblePromos.length > 0 && (
           <section
@@ -111,7 +111,7 @@ export function MenuView({ categories, dishes, promos = [], onBack }: MenuViewPr
               {visiblePromos.map((promo) => (
                 <article
                   key={promo.id}
-                  className="group relative aspect-video w-64 shrink-0 overflow-hidden rounded-xl ring-1 ring-brand-primary/25 shadow-elevated"
+                  className="group relative aspect-video w-56 shrink-0 overflow-hidden rounded-xl ring-1 ring-brand-primary/25 shadow-elevated sm:w-64"
                 >
                   <Image
                     src={promo.image_url}
@@ -124,7 +124,7 @@ export function MenuView({ categories, dishes, promos = [], onBack }: MenuViewPr
                     aria-hidden
                     className="absolute inset-0 bg-gradient-to-t from-[#260101]/85 via-transparent to-transparent"
                   />
-                  <p className="absolute inset-x-3 bottom-2.5 truncate font-heading text-sm font-bold text-brand-light drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]">
+                  <p className="absolute inset-x-3 bottom-2.5 truncate font-heading text-xs font-bold text-brand-light drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)] sm:text-sm">
                     {promo.title}
                   </p>
                 </article>

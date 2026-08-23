@@ -7,55 +7,35 @@ interface HeroSectionProps {
   onOpenMenu: () => void;
 }
 
+/* Contenido central del hero; el video vive en LandingView y el footer completa
+   la columna flex, por lo que aquí solo se despeja la navbar fija. */
 export function HeroSection({ onOpenMenu }: HeroSectionProps) {
   return (
     <section
       aria-label="Inicio"
-      className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-brand-darker"
+      className="relative z-20 flex flex-1 items-center justify-center overflow-hidden px-6 pt-20 pb-6 sm:pt-24"
     >
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 z-0 h-full w-full object-cover"
-      >
-        <source src="/videos/video_login.mp4" type="video/mp4" />
-      </video>
-
-      {/* Superposición de degradado de marca */}
-      <div
-        aria-hidden
-        className="absolute inset-0 z-10 bg-gradient-to-t from-[#260101] via-[#260101]/70 to-[#260101]/40"
-      />
-
-      {/* Difuminado inferior: transición orgánica del video hacia el footer superpuesto */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-32 bg-gradient-to-t from-[#260101] to-transparent"
-      />
-
-      <div className="relative z-20 mx-auto flex max-w-3xl flex-col items-center gap-6 px-6 pt-32 pb-48 text-center sm:pt-28 sm:pb-44">
-        <p className="flex items-center gap-2 rounded-full bg-white/[0.06] px-4 py-1.5 font-heading text-xs font-semibold tracking-[0.22em] text-brand-primary uppercase ring-1 ring-brand-primary/25 backdrop-blur-sm animate-fade-in-up [animation-delay:80ms]">
+      <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 text-center sm:gap-6">
+        <p className="flex items-center gap-2 rounded-full bg-white/[0.06] px-4 py-1.5 font-heading text-[11px] font-semibold tracking-[0.22em] text-brand-primary uppercase ring-1 ring-brand-primary/25 backdrop-blur-sm animate-fade-in-up [animation-delay:80ms] sm:text-xs">
           <Sparkles className="size-3.5" aria-hidden />
           {siteConfig.name}
         </p>
 
-        <h1 className="font-display text-5xl leading-[1.05] font-bold text-balance text-brand-light drop-shadow-[0_2px_18px_rgba(0,0,0,0.45)] sm:text-6xl lg:text-7xl animate-fade-in-up [animation-delay:160ms]">
+        <h1 className="font-display text-4xl leading-[1.08] font-bold text-balance text-brand-light drop-shadow-[0_2px_18px_rgba(0,0,0,0.45)] animate-fade-in-up [animation-delay:160ms] sm:text-6xl sm:leading-[1.05] lg:text-7xl">
           Sabores que{' '}
           <em className="text-glow-primary text-brand-primary italic">se recuerdan</em>
         </h1>
 
-        <p className="max-w-xl text-base leading-relaxed text-brand-light/75 sm:text-lg animate-fade-in-up [animation-delay:240ms]">
+        <p className="max-w-md text-sm leading-relaxed text-brand-light/75 animate-fade-in-up [animation-delay:240ms] sm:max-w-xl sm:text-lg">
           Explora nuestra carta, descubre las promociones de la casa y consulta la
           disponibilidad del Menú del Día al instante por WhatsApp.
         </p>
 
-        <div className="mt-2 flex w-full items-center justify-center sm:w-auto animate-fade-in-up [animation-delay:320ms]">
+        <div className="mt-1 flex w-full items-center justify-center sm:w-auto animate-fade-in-up [animation-delay:320ms]">
           <button
             type="button"
             onClick={onOpenMenu}
-            className="group relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading text-base font-bold text-[#260101] shadow-glow-accent transition-transform duration-200 animate-pulse-glow hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto sm:px-10"
+            className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading text-sm font-bold text-[#260101] shadow-glow-accent transition-transform duration-200 animate-pulse-glow hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:h-14 sm:w-auto sm:px-10 sm:text-base"
           >
             <span className="relative z-[1]">Abrir Menú de Platos</span>
             <span
