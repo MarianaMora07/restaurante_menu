@@ -22,7 +22,3 @@ export function buildWhatsAppUrl(dishName?: string): string {
   );
   return `https://wa.me/${siteConfig.whatsappNumber}?text=${text}`;
 }
-
-export function scrollToSection(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}

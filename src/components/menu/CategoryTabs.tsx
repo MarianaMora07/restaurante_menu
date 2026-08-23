@@ -24,7 +24,7 @@ export function CategoryTabs({ categories, activeCategory, onSelect }: CategoryT
   return (
     <nav
       aria-label="Categorías del menú"
-      className="sticky top-16 z-40 border-b border-brand-primary/10 bg-brand-darker/85 shadow-elevated backdrop-blur-md transition-all duration-300"
+      className="border-b border-white/5"
     >
       <div
         ref={trackRef}

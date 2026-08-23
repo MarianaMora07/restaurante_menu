@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Lock, UtensilsCrossed } from 'lucide-react';
 import { siteConfig } from '@/config/site';
-import { cn, scrollToSection } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 interface NavbarProps {
-  hasPromos: boolean;
+  onOpenMenu: () => void;
 }
 
-export function Navbar({ hasPromos }: NavbarProps) {
+export function Navbar({ onOpenMenu }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -44,37 +44,23 @@ export function Navbar({ hasPromos }: NavbarProps) {
           </span>
         </button>
 
-        <nav aria-label="Secciones del sitio" className="hidden items-center gap-1 sm:flex">
-          <NavLink label="Menú" onClick={() => scrollToSection('menu')} />
-          {hasPromos && <NavLink label="Promociones" onClick={() => scrollToSection('promos')} />}
-          <NavLink label="Contacto" onClick={() => scrollToSection('contacto')} />
-        </nav>
-
-        <Link
-          href="/login"
-          aria-label="Acceso al panel de administración"
-          className="flex size-10 items-center justify-center rounded-full text-brand-light/40 ring-1 ring-white/10 backdrop-blur-sm transition-all hover:scale-105 hover:text-brand-primary hover:ring-brand-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-        >
-          <Lock className="size-4" aria-hidden />
-        </Link>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onOpenMenu}
+            className="rounded-xl px-3.5 py-2 font-heading text-sm font-medium text-brand-light/75 transition-colors hover:bg-white/[0.07] hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          >
+            Menú
+          </button>
+          <Link
+            href="/login"
+            aria-label="Acceso al panel de administración"
+            className="flex size-10 items-center justify-center rounded-full text-brand-light/40 ring-1 ring-white/10 backdrop-blur-sm transition-all hover:scale-105 hover:text-brand-primary hover:ring-brand-primary/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          >
+            <Lock className="size-4" aria-hidden />
+          </Link>
+        </div>
       </div>
     </header>
-  );
-}
-
-interface NavLinkProps {
-  label: string;
-  onClick: () => void;
-}
-
-function NavLink({ label, onClick }: NavLinkProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="rounded-xl px-3.5 py-2 font-heading text-sm font-medium text-brand-light/75 transition-colors hover:bg-white/[0.07] hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-    >
-      {label}
-    </button>
   );
 }

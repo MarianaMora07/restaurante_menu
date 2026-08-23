@@ -1,10 +1,5 @@
 import { getActivePromos, getCategories, getDishes } from '@/lib/supabase/queries';
-import { MenuView } from '@/components/menu/MenuView';
-import { Navbar } from '@/components/landing/Navbar';
-import { HeroSection } from '@/components/landing/HeroSection';
-import { PromoBanner } from '@/components/landing/PromoBanner';
-import { BottomDock } from '@/components/landing/BottomDock';
-import { Footer } from '@/components/landing/Footer';
+import { MenuBookShell } from '@/components/book/MenuBookShell';
 import type { Promo } from '@/types/database';
 
 export default async function Home() {
@@ -32,14 +27,5 @@ export default async function Home() {
             })
           );
 
-  return (
-    <div className="flex min-h-dvh flex-col bg-brand-darker">
-      <Navbar hasPromos={slides.length > 0} />
-      <HeroSection hasPromos={slides.length > 0} />
-      <PromoBanner promos={slides} />
-      <MenuView categories={categories} dishes={dishes} />
-      <BottomDock hasPromos={slides.length > 0} />
-      <Footer />
-    </div>
-  );
+  return <MenuBookShell promos={slides} categories={categories} dishes={dishes} />;
 }

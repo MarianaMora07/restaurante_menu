@@ -1,9 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Image from 'next/image';
 import { motion } from 'motion/react';
-import { UtensilsCrossed } from 'lucide-react';
-import type { Category, Dish } from '@/types/database';
+import { ArrowLeft, UtensilsCrossed } from 'lucide-react';
+import type { Category, Dish, Promo } from '@/types/database';
+import { siteConfig } from '@/config/site';
 import { CategoryTabs } from './CategoryTabs';
 import { DishCard } from './DishCard';
 import { DishModal } from './DishModal';
@@ -11,6 +13,8 @@ import { DishModal } from './DishModal';
 interface MenuViewProps {
   categories: Category[];
   dishes: Dish[];
+  promos?: Promo[];
+  onBack?: () => void;
 }
 
 interface DishGroup {
@@ -19,7 +23,7 @@ interface DishGroup {
   dishes: Dish[];
 }
 
-export function MenuView({ categories, dishes }: MenuViewProps) {
+export function MenuView({ categories, dishes, promos = [], onBack }: MenuViewProps) {
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
 
@@ -54,17 +58,81 @@ export function MenuView({ categories, dishes }: MenuViewProps) {
       .filter((group) => group.dishes.length > 0);
   }, [activeCategory, categories, dishes]);
 
+  const visiblePromos = promos.slice(0, 8);
+
   return (
-    <>
-      <CategoryTabs
-        categories={categories}
-        activeCategory={activeCategory}
-        onSelect={setActiveCategory}
-      />
+    <div className="flex min-h-dvh flex-col bg-brand-darker">
+      {/* Encabezado unificado: botón de retorno + tabs siempre visibles */}
+      <header className="sticky top-0 z-40 bg-brand-darker/90 shadow-elevated backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 pt-2.5 sm:px-6">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center gap-2 rounded-full py-2 pr-4 pl-3 font-heading text-sm font-semibold text-brand-light ring-1 ring-white/15 transition-all hover:bg-white/[0.07] hover:text-brand-primary hover:ring-brand-primary/40 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            >
+              <ArrowLeft className="size-4" aria-hidden />
+              Volver al Inicio
+            </button>
+          ) : (
+            <span />
+          )}
+          <span className="font-display text-base font-bold tracking-tight text-brand-light/80">
+            {siteConfig.name}
+          </span>
+        </div>
+        <div className="h-1.5" aria-hidden />
+        <CategoryTabs
+          categories={categories}
+          activeCategory={activeCategory}
+          onSelect={setActiveCategory}
+        />
+      </header>
+
       <main
         id="menu"
-        className="mx-auto w-full max-w-5xl scroll-mt-28 flex-1 px-4 pt-10 pb-20 sm:px-6"
+        className="mx-auto w-full max-w-5xl scroll-mt-28 flex-1 px-4 pt-8 pb-20 sm:px-6"
       >
+        {visiblePromos.length > 0 && (
+          <section
+            aria-label="Promociones vigentes"
+            className="mb-10 flex flex-col gap-3"
+          >
+            <div className="flex items-center gap-3">
+              <h2 className="font-display text-lg font-bold text-brand-light">
+                Promociones
+              </h2>
+              <span
+                aria-hidden
+                className="h-0.5 flex-1 rounded-full bg-gradient-to-r from-brand-primary/50 to-transparent"
+              />
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {visiblePromos.map((promo) => (
+                <article
+                  key={promo.id}
+                  className="group relative aspect-video w-64 shrink-0 overflow-hidden rounded-xl ring-1 ring-brand-primary/25 shadow-elevated"
+                >
+                  <Image
+                    src={promo.image_url}
+                    alt={promo.title}
+                    fill
+                    sizes="256px"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div
+                    aria-hidden
+                    className="absolute inset-0 bg-gradient-to-t from-[#260101]/85 via-transparent to-transparent"
+                  />
+                  <p className="absolute inset-x-3 bottom-2.5 truncate font-heading text-sm font-bold text-brand-light drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)]">
+                    {promo.title}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
         {groups.length > 0 ? (
           <div className="flex flex-col gap-12">
             {groups.map((group) => (
@@ -105,7 +173,8 @@ export function MenuView({ categories, dishes }: MenuViewProps) {
           </div>
         )}
       </main>
+
       <DishModal dish={selectedDish} onClose={() => setSelectedDish(null)} />
-    </>
+    </div>
   );
 }

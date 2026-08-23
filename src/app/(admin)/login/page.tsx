@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Loader2, Lock, Mail, UtensilsCrossed } from 'lucide-react';
+import { ArrowLeft, Loader2, Lock, Mail, UtensilsCrossed } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 const inputClasses =
@@ -57,6 +58,14 @@ export default function LoginPage() {
         <source src="/videos/video_hero.mp4" type="video/mp4" />
       </video>
       <div aria-hidden className="absolute inset-0 z-10 bg-[#260101]/80" />
+
+      <Link
+        href="/"
+        className="absolute top-[max(1rem,env(safe-area-inset-top))] left-4 z-30 flex items-center gap-2 rounded-full bg-white/[0.08] py-2.5 pr-5 pl-4 font-heading text-sm font-semibold text-brand-light ring-1 ring-white/15 backdrop-blur-md transition-all hover:bg-white/[0.14] hover:text-brand-primary hover:ring-brand-primary/40 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+      >
+        <ArrowLeft className="size-4" aria-hidden />
+        Volver al Restaurante
+      </Link>
 
       <main className="relative z-20 w-full max-w-sm">
         <div className="flex flex-col items-center gap-3 pb-8 text-center">

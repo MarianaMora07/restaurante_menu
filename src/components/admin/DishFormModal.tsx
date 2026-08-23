@@ -2,14 +2,16 @@
 
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import Image from 'next/image';
-import { Trash2, X } from 'lucide-react';
+import { Loader2, Sparkles, Trash2, X } from 'lucide-react';
 import type { Category, Dish } from '@/types/database';
 import { deleteDish, saveDish } from '@/app/actions/dishes';
+import { generateDishDescription } from '@/app/actions/ai-description';
 import { uploadImage } from '@/app/actions/storage';
 import {
   checkboxRowClasses,
   Field,
   inputClasses,
+  selectClasses,
 } from '@/components/ui/formStyles';
 import { ModalShell } from '@/components/ui/ModalShell';
 
@@ -34,6 +36,22 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
   const [previewUrl, setPreviewUrl] = useState<string | null>(dish?.image_url ?? null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+
+  async function handleGenerateDescription() {
+    if (!name.trim() || isGeneratingDescription) return;
+    setIsGeneratingDescription(true);
+    setError(null);
+
+    const result = await generateDishDescription(name);
+    setIsGeneratingDescription(false);
+
+    if (!result.success || !result.description) {
+      setError(result.error ?? 'No se pudo generar la descripción con IA.');
+      return;
+    }
+    setDescription(result.description);
+  }
 
   function addIngredient(raw: string) {
     const parts = raw
@@ -197,7 +215,7 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               required
-              className={inputClasses}
+              className={selectClasses}
             >
               <option value="" disabled>
                 Selecciona…
@@ -224,7 +242,25 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
           </Field>
         </div>
 
-        <Field label="Descripción">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-heading text-xs font-semibold tracking-[0.14em] text-brand-light/60 uppercase">
+              Descripción
+            </span>
+            <button
+              type="button"
+              onClick={handleGenerateDescription}
+              disabled={!name.trim() || isGeneratingDescription || isSubmitting}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold text-brand-primary ring-1 ring-brand-primary/30 transition-colors hover:bg-brand-primary/10 hover:text-brand-accent hover:ring-brand-accent/40 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            >
+              {isGeneratingDescription ? (
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              ) : (
+                <Sparkles className="size-3.5" aria-hidden />
+              )}
+              {isGeneratingDescription ? 'Generando…' : 'Generar con IA'}
+            </button>
+          </div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -232,7 +268,7 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
             placeholder="Descripción breve del plato…"
             className={`${inputClasses} h-auto py-2.5`}
           />
-        </Field>
+        </div>
 
         <Field
           label="Ingredientes"
