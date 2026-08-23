@@ -3,7 +3,7 @@
 import { useMemo, useState, useOptimistic, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, Megaphone, Plus, UtensilsCrossed, X } from 'lucide-react';
-import type { Category, Dish, Promo } from '@/types/database';
+import type { Category, Dish, Promo, RateConfig } from '@/types/database';
 import { siteConfig } from '@/config/site';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -15,11 +15,13 @@ import { DishRow } from './DishRow';
 import { DishFormModal } from './DishFormModal';
 import { PromoRow } from './PromoRow';
 import { PromoFormModal } from './PromoFormModal';
+import { RateSettingsCard } from './RateSettingsCard';
 
 interface DashboardViewProps {
   categories: Category[];
   dishes: Dish[];
   promos: Promo[];
+  rateConfig: RateConfig;
 }
 
 interface Section {
@@ -38,7 +40,7 @@ type PromoFlagUpdate = {
   value: boolean;
 };
 
-export function DashboardView({ categories, dishes, promos }: DashboardViewProps) {
+export function DashboardView({ categories, dishes, promos, rateConfig }: DashboardViewProps) {
   const router = useRouter();
   const [optimisticDishes, applyOptimistic] = useOptimistic(
     dishes,
@@ -150,6 +152,14 @@ export function DashboardView({ categories, dishes, promos }: DashboardViewProps
       </header>
 
       <main className="mx-auto w-full max-w-4xl px-4 pt-6 pb-16">
+        <section aria-label="Configuración de moneda" className="mb-10">
+          <RateSettingsCard
+            key={`${rateConfig.settings.mode}-${rateConfig.settings.adjustPercent}`}
+            settings={rateConfig.settings}
+            bcv={rateConfig.bcv}
+          />
+        </section>
+
         <section aria-label="Platos">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-heading text-sm font-bold tracking-[0.16em] text-brand-light/50 uppercase">
@@ -177,6 +187,7 @@ export function DashboardView({ categories, dishes, promos }: DashboardViewProps
                       <DishRow
                         key={dish.id}
                         dish={dish}
+                        rate={rateConfig.effective}
                         isPending={isPending}
                         onToggleAvailability={(value) =>
                           handleToggle(

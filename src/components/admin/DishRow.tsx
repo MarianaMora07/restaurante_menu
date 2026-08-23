@@ -2,12 +2,14 @@
 
 import Image from 'next/image';
 import { Pencil, UtensilsCrossed } from 'lucide-react';
-import type { Dish } from '@/types/database';
-import { cn, formatPrice } from '@/lib/utils';
+import type { Dish, UsdRateInfo } from '@/types/database';
+import { cn } from '@/lib/utils';
+import { DualPrice } from '@/components/ui/DualPrice';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 interface DishRowProps {
   dish: Dish;
+  rate: UsdRateInfo | null;
   isPending: boolean;
   onToggleAvailability: (value: boolean) => void;
   onToggleDailyMenu: (value: boolean) => void;
@@ -16,6 +18,7 @@ interface DishRowProps {
 
 export function DishRow({
   dish,
+  rate,
   isPending,
   onToggleAvailability,
   onToggleDailyMenu,
@@ -40,7 +43,12 @@ export function DishRow({
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold text-brand-light">{dish.name}</p>
-        <p className="text-sm font-medium text-brand-primary">{formatPrice(dish.price)}</p>
+        <DualPrice
+          amount={dish.price}
+          rate={rate}
+          align="start"
+          className="mt-0.5 text-sm font-medium text-brand-primary"
+        />
       </div>
       <div className="flex shrink-0 flex-col gap-2">
         <ToggleSwitch

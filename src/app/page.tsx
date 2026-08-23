@@ -1,13 +1,11 @@
 import { getActivePromos, getCategories, getDishes } from '@/lib/supabase/queries';
+import { getRateConfig } from '@/lib/bcv';
 import { MenuBookShell } from '@/components/book/MenuBookShell';
 import type { Promo } from '@/types/database';
 
 export default async function Home() {
-  const [{ data: categories }, { data: dishes }, { data: promos }] = await Promise.all([
-    getCategories(),
-    getDishes(),
-    getActivePromos(),
-  ]);
+  const [{ data: categories }, { data: dishes }, { data: promos }, rateConfig] =
+    await Promise.all([getCategories(), getDishes(), getActivePromos(), getRateConfig()]);
 
   const slides =
     promos.length > 0
@@ -27,5 +25,12 @@ export default async function Home() {
             })
           );
 
-  return <MenuBookShell promos={slides} categories={categories} dishes={dishes} />;
+  return (
+    <MenuBookShell
+      promos={slides}
+      categories={categories}
+      dishes={dishes}
+      rate={rateConfig.effective}
+    />
+  );
 }

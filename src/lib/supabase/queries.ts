@@ -1,9 +1,36 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Category, Dish, Promo } from '@/types/database';
+import type { Category, Dish, Promo, RateSettings } from '@/types/database';
 
 export interface QueryResult<T> {
   data: T;
   error: string | null;
+}
+
+const DEFAULT_RATE_SETTINGS: RateSettings = { mode: 'bcv', adjustPercent: 0 };
+
+export async function getRateSettings(): Promise<QueryResult<RateSettings>> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('app_settings').select('key, value');
+    if (error) return { data: DEFAULT_RATE_SETTINGS, error: error.message };
+
+    const values = new Map(
+      (data ?? []).map((row: { key: string; value: string }) => [row.key, row.value])
+    );
+    const percentValue = Number(values.get('usd_rate_adjust_percent'));
+    return {
+      data: {
+        mode: values.get('usd_rate_mode') === 'custom' ? 'custom' : 'bcv',
+        adjustPercent: Number.isFinite(percentValue) ? percentValue : 0,
+      },
+      error: null,
+    };
+  } catch (e) {
+    return {
+      data: DEFAULT_RATE_SETTINGS,
+      error: e instanceof Error ? e.message : 'Unexpected error',
+    };
+  }
 }
 
 async function fetchPromos(activeOnly: boolean): Promise<QueryResult<Promo[]>> {

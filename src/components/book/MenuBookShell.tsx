@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion/react';
-import type { Category, Dish, Promo } from '@/types/database';
+import type { Category, Dish, Promo, UsdRateInfo } from '@/types/database';
 import { LandingView } from '@/components/landing/LandingView';
 import { MenuView } from '@/components/menu/MenuView';
 
@@ -12,6 +12,7 @@ interface MenuBookShellProps {
   promos: Promo[];
   categories: Category[];
   dishes: Dish[];
+  rate: UsdRateInfo | null;
 }
 
 /* Portada (landing): gira sobre su borde izquierdo como hoja de libro hacia la derecha. */
@@ -43,7 +44,7 @@ const fadeVariants: Variants = {
   exit: { opacity: 0 },
 };
 
-export function MenuBookShell({ promos, categories, dishes }: MenuBookShellProps) {
+export function MenuBookShell({ promos, categories, dishes, rate }: MenuBookShellProps) {
   const [page, setPage] = useState<BookPage>('landing');
   const prefersReducedMotion = useReducedMotion();
 
@@ -100,6 +101,7 @@ export function MenuBookShell({ promos, categories, dishes }: MenuBookShellProps
               categories={categories}
               dishes={dishes}
               promos={promos}
+              rate={rate}
               onBack={closeMenu}
             />
           </motion.div>

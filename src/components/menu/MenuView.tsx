@@ -1,19 +1,24 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Image from 'next/image';
 import { motion } from 'motion/react';
-import { ArrowLeft, UtensilsCrossed } from 'lucide-react';
-import type { Category, Dish, Promo } from '@/types/database';
+import { ArrowLeft, ShoppingBag, UtensilsCrossed } from 'lucide-react';
+import type { Category, Dish, Promo, UsdRateInfo } from '@/types/database';
 import { siteConfig } from '@/config/site';
+import { formatPrice } from '@/lib/utils';
 import { CategoryTabs } from './CategoryTabs';
 import { DishCard } from './DishCard';
 import { DishModal } from './DishModal';
+import { PromoCarousel } from './PromoCarousel';
+import { PromoModal } from './PromoModal';
+import { CartSheet } from './CartSheet';
+import { CartProvider, useCart } from './CartContext';
 
 interface MenuViewProps {
   categories: Category[];
   dishes: Dish[];
   promos?: Promo[];
+  rate?: UsdRateInfo | null;
   onBack?: () => void;
 }
 
@@ -23,9 +28,28 @@ interface DishGroup {
   dishes: Dish[];
 }
 
-export function MenuView({ categories, dishes, promos = [], onBack }: MenuViewProps) {
-  const [activeCategory, setActiveCategory] = useState<string>('all');
+export function MenuView(props: MenuViewProps) {
+  return (
+    <CartProvider>
+      <MenuViewContent {...props} />
+    </CartProvider>
+  );
+}
+
+function MenuViewContent({
+  categories,
+  dishes,
+  promos = [],
+  rate = null,
+  onBack,
+}: MenuViewProps) {
+  const [activeCategory, setActiveCategory] = useState<string>(() =>
+    dishes.some((dish) => dish.is_daily_menu) ? 'daily' : 'all'
+  );
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
+  const [selectedPromo, setSelectedPromo] = useState<Promo | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { count, total } = useCart();
 
   const groups = useMemo<DishGroup[]>(() => {
     if (activeCategory === 'daily') {
@@ -91,45 +115,18 @@ export function MenuView({ categories, dishes, promos = [], onBack }: MenuViewPr
 
       <main
         id="menu"
-        className="mx-auto w-full max-w-5xl scroll-mt-28 flex-1 px-4 pt-6 pb-20 sm:px-6 sm:pt-8"
+        className="mx-auto w-full max-w-5xl scroll-mt-28 flex-1 px-4 pt-6 pb-24 sm:px-6 sm:pt-8"
       >
         {visiblePromos.length > 0 && (
-          <section
-            aria-label="Promociones vigentes"
-            className="mb-10 flex flex-col gap-3"
-          >
+          <section aria-label="Promociones vigentes" className="mb-10 flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <h2 className="font-display text-lg font-bold text-brand-light">
-                Promociones
-              </h2>
+              <h2 className="font-display text-lg font-bold text-brand-light">Promociones</h2>
               <span
                 aria-hidden
                 className="h-0.5 flex-1 rounded-full bg-gradient-to-r from-brand-primary/50 to-transparent"
               />
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {visiblePromos.map((promo) => (
-                <article
-                  key={promo.id}
-                  className="group relative aspect-video w-56 shrink-0 overflow-hidden rounded-xl ring-1 ring-brand-primary/25 shadow-elevated sm:w-64"
-                >
-                  <Image
-                    src={promo.image_url}
-                    alt={promo.title}
-                    fill
-                    sizes="256px"
-                    className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <div
-                    aria-hidden
-                    className="absolute inset-0 bg-gradient-to-t from-[#260101]/85 via-transparent to-transparent"
-                  />
-                  <p className="absolute inset-x-3 bottom-2.5 truncate font-heading text-xs font-bold text-brand-light drop-shadow-[0_1px_6px_rgba(0,0,0,0.6)] sm:text-sm">
-                    {promo.title}
-                  </p>
-                </article>
-              ))}
-            </div>
+            <PromoCarousel promos={visiblePromos} onSelect={setSelectedPromo} />
           </section>
         )}
 
@@ -156,7 +153,7 @@ export function MenuView({ categories, dishes, promos = [], onBack }: MenuViewPr
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
                   {group.dishes.map((dish) => (
-                    <DishCard key={dish.id} dish={dish} onOpen={setSelectedDish} />
+                    <DishCard key={dish.id} dish={dish} rate={rate} onOpen={setSelectedDish} />
                   ))}
                 </div>
               </motion.section>
@@ -174,7 +171,29 @@ export function MenuView({ categories, dishes, promos = [], onBack }: MenuViewPr
         )}
       </main>
 
-      <DishModal dish={selectedDish} onClose={() => setSelectedDish(null)} />
+      {count > 0 && !isCartOpen && (
+        <motion.button
+          key={count}
+          type="button"
+          onClick={() => setIsCartOpen(true)}
+          initial={{ scale: 0.6, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 26 }}
+          className="fixed right-4 bottom-5 z-40 flex items-center gap-2.5 rounded-full bg-gradient-to-r from-brand-accent to-brand-primary py-2.5 pr-5 pl-4 font-heading text-sm font-bold text-brand-darker shadow-glow-accent transition-transform hover:scale-[1.04] active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-darker"
+        >
+          <ShoppingBag className="size-5" aria-hidden />
+          <span className="flex flex-col leading-none">
+            <span>
+              {count} {count === 1 ? 'plato' : 'platos'}
+            </span>
+            <span className="mt-1 text-[11px] font-semibold opacity-80">{formatPrice(total)}</span>
+          </span>
+        </motion.button>
+      )}
+
+      <DishModal dish={selectedDish} rate={rate} onClose={() => setSelectedDish(null)} />
+      <PromoModal promo={selectedPromo} onClose={() => setSelectedPromo(null)} />
+      {isCartOpen && <CartSheet rate={rate} onClose={() => setIsCartOpen(false)} />}
     </div>
   );
 }

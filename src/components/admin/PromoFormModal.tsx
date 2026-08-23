@@ -5,12 +5,14 @@ import Image from 'next/image';
 import { Trash2, X } from 'lucide-react';
 import type { Promo } from '@/types/database';
 import { deletePromo, savePromo } from '@/app/actions/promos';
+import { generatePromoDescription } from '@/app/actions/ai-description';
 import { uploadImage } from '@/app/actions/storage';
 import {
   checkboxRowClasses,
   Field,
   inputClasses,
 } from '@/components/ui/formStyles';
+import { AiDescriptionField } from '@/components/ui/AiDescriptionField';
 import { ModalShell } from '@/components/ui/ModalShell';
 
 interface PromoFormModalProps {
@@ -30,6 +32,22 @@ export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(promo?.image_url ?? null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+
+  async function handleGenerateDescription() {
+    if (!title.trim() || isGeneratingDescription) return;
+    setIsGeneratingDescription(true);
+    setError(null);
+
+    const result = await generatePromoDescription(title);
+    setIsGeneratingDescription(false);
+
+    if (!result.success || !result.description) {
+      setError(result.error ?? 'No se pudo generar la descripción con IA.');
+      return;
+    }
+    setDescription(result.description);
+  }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0] ?? null;
@@ -162,15 +180,16 @@ export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
           />
         </Field>
 
-        <Field label="Descripción (opcional)">
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            placeholder="Detalle breve de la oferta…"
-            className={`${inputClasses} h-auto py-2.5`}
-          />
-        </Field>
+        <AiDescriptionField
+          value={description}
+          onChange={setDescription}
+          onGenerate={handleGenerateDescription}
+          isGenerating={isGeneratingDescription}
+          canGenerate={title.trim().length > 0}
+          disabled={isSubmitting}
+          rows={2}
+          placeholder="Detalle breve de la oferta…"
+        />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field

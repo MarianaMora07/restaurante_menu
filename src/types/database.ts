@@ -43,3 +43,37 @@ export interface Promo {
 }
 
 export type CreatePromoDTO = Omit<Promo, 'id' | 'created_at'>;
+
+export interface CartItem {
+  dishId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  note?: string;
+}
+
+export type RateMode = 'bcv' | 'custom';
+
+export interface RateSettings {
+  mode: RateMode;
+  adjustPercent: number;
+}
+
+export interface BcvRate {
+  rate: number;
+  updatedAt: string | null;
+}
+
+export interface UsdRateInfo {
+  rate: number;
+  source: RateMode;
+  bcvRate: number;
+  adjustPercent: number;
+  updatedAt: string | null;
+}
+
+export interface RateConfig {
+  settings: RateSettings;
+  bcv: BcvRate | null;
+  effective: UsdRateInfo | null;
+}

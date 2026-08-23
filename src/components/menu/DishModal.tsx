@@ -1,18 +1,21 @@
 'use client';
 
 import Image from 'next/image';
-import { Check, UtensilsCrossed, X } from 'lucide-react';
-import type { Dish } from '@/types/database';
-import { formatPrice } from '@/lib/utils';
+import { Check, Plus, UtensilsCrossed, X } from 'lucide-react';
+import type { Dish, UsdRateInfo } from '@/types/database';
 import { ModalShell } from '@/components/ui/ModalShell';
+import { DualPrice } from '@/components/ui/DualPrice';
 import { WhatsAppButton } from './WhatsAppButton';
+import { useCart } from './CartContext';
 
 interface DishModalProps {
   dish: Dish | null;
+  rate?: UsdRateInfo | null;
   onClose: () => void;
 }
 
-export function DishModal({ dish, onClose }: DishModalProps) {
+export function DishModal({ dish, rate = null, onClose }: DishModalProps) {
+  const { addDish } = useCart();
   if (!dish) return null;
 
   return (
@@ -49,9 +52,11 @@ export function DishModal({ dish, onClose }: DishModalProps) {
           <h2 className="font-heading text-xl leading-snug font-bold text-brand-light sm:text-2xl">
             {dish.name}
           </h2>
-          <span className="shrink-0 font-heading text-lg font-bold text-brand-primary">
-            {formatPrice(dish.price)}
-          </span>
+          <DualPrice
+            amount={dish.price}
+            rate={rate}
+            className="shrink-0 font-heading text-lg font-bold text-brand-primary"
+          />
         </div>
         {dish.description && (
           <p className="text-sm leading-relaxed text-brand-light/65">
@@ -81,7 +86,21 @@ export function DishModal({ dish, onClose }: DishModalProps) {
             Este plato está agotado actualmente.
           </p>
         )}
-        <WhatsAppButton dishName={dish.name} className="mt-1 rounded-2xl shadow-elevated" />
+        <div className="mt-1 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => addDish(dish)}
+            disabled={!dish.is_available}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading font-bold text-brand-darker shadow-elevated transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:saturate-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          >
+            <Plus className="size-5" aria-hidden />
+            Agregar al pedido
+          </button>
+          <WhatsAppButton
+            dishName={dish.name}
+            className="rounded-xl bg-white/[0.07] text-[#4ADE80] shadow-elevated ring-1 ring-[#25D366]/40 hover:bg-white/[0.12] hover:text-[#86EFAC]"
+          />
+        </div>
       </div>
     </ModalShell>
   );
