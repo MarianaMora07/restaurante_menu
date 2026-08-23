@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+ * Design tokens — Tailwind v4 (config CSS-first, sin tailwind.config.js)
+ * Paleta: #F2AE2E mostaza · #F28729 naranja CTA · #400101 tinto · #260101 fondo
+ * ------------------------------------------------------------------------- */
+@theme {
+  --color-brand-primary: #f2ae2e;
+  --color-brand-accent: #f28729;
+  --color-brand-dark: #400101;
+  --color-brand-darker: #260101;
+  --color-brand-light: #f2f2f2;
+
+  --shadow-elevated: 0 24px 48px -16px rgb(0 0 0 / 0.55);
+  --shadow-card-hover: 0 14px 44px -10px rgb(242 174 46 / 0.18);
+  --shadow-glow-accent: 0 10px 36px -8px rgb(242 135 41 / 0.5);
+
+  --animate-slide-up: slide-up 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-fade-in: fade-in 0.25s ease-out;
+  --animate-fade-in-up: fade-in-up 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-pulse-glow: pulse-glow 2.6s ease-in-out infinite;
+  --animate-shine: shine 3.5s ease-in-out infinite;
+
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 0 rgb(242 135 41 / 0.45),
+        var(--shadow-glow-accent);
+    }
+    50% {
+      box-shadow:
+        0 0 0 16px rgb(242 135 41 / 0),
+        0 12px 48px -6px rgb(242 174 46 / 0.65);
+    }
+  }
+
+  @keyframes shine {
+    0%,
+    55%,
+    100% {
+      transform: translateX(-180%) skewX(-18deg);
+    }
+    75% {
+      transform: translateX(280%) skewX(-18deg);
+    }
+  }
+}
+
+/* Fuentes expuestas por next/font en layout.tsx */
+@theme inline {
+  --font-display: var(--font-playfair);
+  --font-heading: var(--font-jakarta);
+  --font-body: var(--font-inter);
+}
+
+@utility text-glow-primary {
+  text-shadow:
+    0 0 24px rgb(242 174 46 / 0.45),
+    0 0 80px rgb(242 174 46 / 0.22);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-brand-darker);
+    color: var(--color-brand-light);
+    font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(242 174 46 / 0.28) transparent;
+  }
+
+  ::selection {
+    background-color: rgb(242 174 46 / 0.3);
+    color: var(--color-brand-light);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
