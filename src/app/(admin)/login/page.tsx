@@ -69,7 +69,7 @@ export default function LoginPage() {
 
       <main className="relative z-20 w-full max-w-sm">
         <div className="flex flex-col items-center gap-3 pb-8 text-center">
-          <div className="flex size-14 items-center justify-center rounded-2xl bg-linear-to-br from-brand-primary to-brand-accent text-brand-darker shadow-glow-accent">
+          <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-primary to-brand-accent text-brand-darker shadow-glow-accent">
             <UtensilsCrossed className="size-7" aria-hidden />
           </div>
           <h1 className="font-display text-2xl font-bold tracking-tight text-brand-light">
@@ -127,7 +127,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-1 flex h-12 items-center justify-center rounded-xl bg-linear-to-r from-brand-accent to-brand-primary font-heading text-sm font-bold text-brand-darker transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="mt-1 flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading text-sm font-bold text-brand-darker transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           >
             {isSubmitting ? (
               <Loader2 className="size-5 animate-spin" aria-hidden />

@@ -83,7 +83,7 @@ function TabButton({ active, featured = false, onClick, children }: TabButtonPro
           className={cn(
             'absolute inset-0 rounded-full',
             featured
-              ? 'bg-linear-to-r from-brand-accent to-brand-primary shadow-glow-accent'
+              ? 'bg-gradient-to-r from-brand-accent to-brand-primary shadow-glow-accent'
               : 'bg-brand-primary'
           )}
         />

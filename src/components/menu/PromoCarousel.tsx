@@ -93,7 +93,7 @@ export function PromoCarousel({ promos, onSelect }: PromoCarouselProps) {
             />
             <div
               aria-hidden
-              className="absolute inset-0 bg-linear-to-t from-brand-darker/90 via-brand-darker/20 to-transparent"
+              className="absolute inset-0 bg-gradient-to-t from-brand-darker/90 via-brand-darker/20 to-transparent"
             />
             <span className="absolute top-3 left-3 flex items-center gap-1.5 rounded-full bg-brand-darker/60 px-3 py-1 font-heading text-xs font-bold tracking-wide text-brand-primary uppercase ring-1 ring-brand-primary/40 backdrop-blur-sm">
               <Megaphone className="size-3.5" aria-hidden />

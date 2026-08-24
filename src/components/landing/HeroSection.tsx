@@ -35,12 +35,12 @@ export function HeroSection({ onOpenMenu }: HeroSectionProps) {
           <button
             type="button"
             onClick={onOpenMenu}
-            className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-2xl bg-linear-to-r from-brand-accent to-brand-primary font-heading text-sm font-bold text-[#260101] shadow-glow-accent transition-transform duration-200 animate-pulse-glow hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:h-14 sm:w-auto sm:px-10 sm:text-base"
+            className="group relative flex h-12 w-full items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading text-sm font-bold text-[#260101] shadow-glow-accent transition-transform duration-200 animate-pulse-glow hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:h-14 sm:w-auto sm:px-10 sm:text-base"
           >
             <span className="relative z-[1]">Abrir Menú de Platos</span>
             <span
               aria-hidden
-              className="absolute inset-y-0 left-0 w-1/3 bg-linear-to-r from-transparent via-white/35 to-transparent animate-shine"
+              className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/35 to-transparent animate-shine"
             />
           </button>
         </div>

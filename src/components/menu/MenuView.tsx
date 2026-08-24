@@ -123,7 +123,7 @@ function MenuViewContent({
               <h2 className="font-display text-lg font-bold text-brand-light">Promociones</h2>
               <span
                 aria-hidden
-                className="h-0.5 flex-1 rounded-full bg-linear-to-r from-brand-primary/50 to-transparent"
+                className="h-0.5 flex-1 rounded-full bg-gradient-to-r from-brand-primary/50 to-transparent"
               />
             </div>
             <PromoCarousel promos={visiblePromos} onSelect={setSelectedPromo} />
@@ -145,7 +145,7 @@ function MenuViewContent({
                   <h2 className="font-display text-2xl font-bold text-brand-light sm:text-3xl">
                     {group.name}
                   </h2>
-                  <span aria-hidden className="h-0.5 flex-1 rounded-full bg-linear-to-r from-brand-primary/50 to-transparent" />
+                  <span aria-hidden className="h-0.5 flex-1 rounded-full bg-gradient-to-r from-brand-primary/50 to-transparent" />
                   <span className="font-heading text-xs font-semibold text-brand-light/35">
                     {group.dishes.length}{' '}
                     {group.dishes.length === 1 ? 'plato' : 'platos'}
@@ -179,7 +179,7 @@ function MenuViewContent({
           initial={{ scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 420, damping: 26 }}
-          className="fixed right-4 bottom-5 z-40 flex items-center gap-2.5 rounded-full bg-linear-to-r from-brand-accent to-brand-primary py-2.5 pr-5 pl-4 font-heading text-sm font-bold text-brand-darker shadow-glow-accent transition-transform hover:scale-[1.04] active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-darker"
+          className="fixed right-4 bottom-5 z-40 flex items-center gap-2.5 rounded-full bg-gradient-to-r from-brand-accent to-brand-primary py-2.5 pr-5 pl-4 font-heading text-sm font-bold text-brand-darker shadow-glow-accent transition-transform hover:scale-[1.04] active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-darker"
         >
           <ShoppingBag className="size-5" aria-hidden />
           <span className="flex flex-col leading-none">
