@@ -36,7 +36,7 @@ export function Navbar({ onOpenMenu }: NavbarProps) {
           aria-label="Volver al inicio"
           className="flex items-center gap-2.5 rounded-xl px-1 py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         >
-          <span className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-primary to-brand-accent text-brand-darker">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-linear-to-br from-brand-primary to-brand-accent text-brand-darker">
             <UtensilsCrossed className="size-4.5" aria-hidden />
           </span>
           <span className="font-display text-lg font-bold tracking-tight text-brand-light drop-shadow-[0_1px_8px_rgba(0,0,0,0.5)]">

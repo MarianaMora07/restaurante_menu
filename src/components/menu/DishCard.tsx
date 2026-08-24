@@ -44,12 +44,12 @@ export function DishCard({ dish, rate, onOpen }: DishCardProps) {
           )}
           <div
             aria-hidden
-            className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-brand-dark/80 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+            className="absolute inset-x-0 bottom-0 h-16 bg-linear-to-t from-brand-dark/80 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           />
           {(dish.is_daily_menu || soldOut) && (
             <div className="absolute top-3 left-3 flex gap-2">
               {dish.is_daily_menu && !soldOut && (
-                <span className="rounded-full bg-gradient-to-r from-brand-accent to-brand-primary px-3 py-1 font-heading text-xs font-bold text-brand-darker shadow-glow-accent">
+                <span className="rounded-full bg-linear-to-r from-brand-accent to-brand-primary px-3 py-1 font-heading text-xs font-bold text-brand-darker shadow-glow-accent">
                   Menú del Día
                 </span>
               )}
@@ -83,7 +83,7 @@ export function DishCard({ dish, rate, onOpen }: DishCardProps) {
           onClick={() => addDish(dish)}
           disabled={soldOut}
           aria-label={`Agregar ${dish.name} al pedido`}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-accent to-brand-primary px-3.5 font-heading text-xs font-bold text-brand-darker shadow-glow-accent transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:saturate-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-linear-to-r from-brand-accent to-brand-primary px-3.5 font-heading text-xs font-bold text-brand-darker shadow-glow-accent transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:saturate-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         >
           <Plus className="size-4" aria-hidden />
           Agregar

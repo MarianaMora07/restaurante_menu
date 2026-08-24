@@ -36,7 +36,7 @@ export function DishModal({ dish, rate = null, onClose }: DishModalProps) {
         )}
         <div
           aria-hidden
-          className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-brand-dark to-transparent"
+          className="absolute inset-x-0 bottom-0 h-20 bg-linear-to-t from-brand-dark to-transparent"
         />
         <button
           type="button"
@@ -91,7 +91,7 @@ export function DishModal({ dish, rate = null, onClose }: DishModalProps) {
             type="button"
             onClick={() => addDish(dish)}
             disabled={!dish.is_available}
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading font-bold text-brand-darker shadow-elevated transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:saturate-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-linear-to-r from-brand-accent to-brand-primary font-heading font-bold text-brand-darker shadow-elevated transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:saturate-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           >
             <Plus className="size-5" aria-hidden />
             Agregar al pedido

@@ -24,7 +24,7 @@ export function LandingView({ onOpenMenu }: LandingViewProps) {
         >
           <source src="/videos/video_login.mp4" type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#260101] via-[#260101]/70 to-[#260101]/40" />
+        <div className="absolute inset-0 bg-linear-to-t from-[#260101] via-[#260101]/70 to-[#260101]/40" />
       </div>
 
       <Navbar onOpenMenu={onOpenMenu} />
