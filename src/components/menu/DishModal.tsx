@@ -48,7 +48,7 @@ export function DishModal({ dish, rate = null, onClose }: DishModalProps) {
         </button>
       </div>
       <div className="flex flex-col gap-5 overflow-y-auto p-6">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="font-heading text-xl leading-snug font-bold text-brand-light sm:text-2xl">
             {dish.name}
           </h2>

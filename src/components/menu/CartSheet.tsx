@@ -75,7 +75,7 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
                   <DualPrice
                     amount={item.price * item.quantity}
                     rate={rate}
-                    className="shrink-0 text-sm font-bold text-brand-primary"
+                    className="shrink-0 font-heading text-sm font-bold text-brand-primary"
                   />
                 </div>
                 <div className="flex items-center gap-2.5">

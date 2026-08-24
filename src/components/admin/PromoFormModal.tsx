@@ -4,6 +4,7 @@ import { useState, type ChangeEvent, type FormEvent } from 'react';
 import Image from 'next/image';
 import { Trash2, X } from 'lucide-react';
 import type { Promo } from '@/types/database';
+import { cn } from '@/lib/utils';
 import { deletePromo, savePromo } from '@/app/actions/promos';
 import { generatePromoDescription } from '@/app/actions/ai-description';
 import { uploadImage } from '@/app/actions/storage';
@@ -22,6 +23,15 @@ interface PromoFormModalProps {
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
+/* Proporciones aceptadas para el banner: entre 3:2 horizontal y 21:9. */
+const IDEAL_RATIO_MIN = 1.5;
+const IDEAL_RATIO_MAX = 2.6;
+
+interface ImageDimensions {
+  width: number;
+  height: number;
+}
+
 export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
   const [title, setTitle] = useState(promo?.title ?? '');
   const [description, setDescription] = useState(promo?.description ?? '');
@@ -30,6 +40,7 @@ export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
   const [isActive, setIsActive] = useState(promo?.is_active ?? true);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(promo?.image_url ?? null);
+  const [imageInfo, setImageInfo] = useState<ImageDimensions | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
@@ -49,6 +60,16 @@ export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
     setDescription(result.description);
   }
 
+  function measureImage(url: string) {
+    const probe = new window.Image();
+    probe.onload = () => {
+      if (probe.naturalWidth > 0 && probe.naturalHeight > 0) {
+        setImageInfo({ width: probe.naturalWidth, height: probe.naturalHeight });
+      }
+    };
+    probe.src = url;
+  }
+
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0] ?? null;
     if (!selected) return;
@@ -62,7 +83,10 @@ export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
     }
     setError(null);
     setFile(selected);
-    setPreviewUrl(URL.createObjectURL(selected));
+    const url = URL.createObjectURL(selected);
+    setPreviewUrl(url);
+    setImageInfo(null);
+    measureImage(url);
   }
 
   async function handleSubmit(event: FormEvent) {
@@ -126,6 +150,10 @@ export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
     onClose();
   }
 
+  const imageRatio = imageInfo ? imageInfo.width / imageInfo.height : null;
+  const imageFitsBanner =
+    imageRatio !== null && imageRatio >= IDEAL_RATIO_MIN && imageRatio <= IDEAL_RATIO_MAX;
+
   return (
     <ModalShell
       onClose={onClose}
@@ -155,7 +183,7 @@ export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 overflow-y-auto p-6">
         <Field
           label="Imagen del flyer"
-          hint="Sube la imagen del flyer que se mostrará en el carrusel de promociones."
+          hint="Medida recomendada: 2100 × 900 px (proporción 21:9), mínimo 1280 px de ancho. El banner recorta otras proporciones para ajustarse; al tocarlo, el cliente ve la imagen completa."
         >
           <label className="group relative block aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-xl bg-white/[0.04] ring-1 ring-white/15 transition-colors hover:ring-brand-accent/50">
             {previewUrl ? (
@@ -167,6 +195,19 @@ export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
             )}
             <input type="file" accept="image/*" onChange={handleFileChange} className="sr-only" />
           </label>
+          {imageInfo && (
+            <p
+              className={cn(
+                'text-xs leading-relaxed',
+                imageFitsBanner ? 'text-brand-light/45' : 'font-medium text-amber-300'
+              )}
+            >
+              Imagen cargada: {imageInfo.width} × {imageInfo.height} px ·{' '}
+              {imageFitsBanner
+                ? 'encajará bien en el banner.'
+                : 'se recortará para ajustarse al banner (ideal 21:9).'}
+            </p>
+          )}
         </Field>
 
         <Field label="Título">

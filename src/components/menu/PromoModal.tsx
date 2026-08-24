@@ -1,8 +1,10 @@
 'use client';
 
+import { useState, type SyntheticEvent } from 'react';
 import Image from 'next/image';
 import { Megaphone, UtensilsCrossed, X } from 'lucide-react';
 import type { Promo } from '@/types/database';
+import { cn } from '@/lib/utils';
 import { ModalShell } from '@/components/ui/ModalShell';
 
 interface PromoModalProps {
@@ -10,23 +12,58 @@ interface PromoModalProps {
   onClose: () => void;
 }
 
+interface ImageDimensions {
+  width: number;
+  height: number;
+}
+
 export function PromoModal({ promo, onClose }: PromoModalProps) {
-  if (!promo) return null;
+  return (
+    <ModalShell onClose={onClose} label={promo?.title ?? 'Detalles de la promoción'}>
+      {promo && <PromoModalContent key={promo.id} promo={promo} onClose={onClose} />}
+    </ModalShell>
+  );
+}
+
+/* Muestra primero un recorte tipo banner (blur) y, tras medir la imagen,
+   la reemplaza por la versión completa sin recorte con su proporción real. */
+function PromoModalContent({ promo, onClose }: { promo: Promo; onClose: () => void }) {
+  const [dimensions, setDimensions] = useState<ImageDimensions | null>(null);
+
+  function handleImageLoad(event: SyntheticEvent<HTMLImageElement>) {
+    const { naturalWidth, naturalHeight } = event.currentTarget;
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      setDimensions({ width: naturalWidth, height: naturalHeight });
+    }
+  }
 
   return (
-    <ModalShell onClose={onClose} label={promo.title}>
-      <div className="relative aspect-[16/10] w-full shrink-0 bg-white/[0.04]">
-        <Image
-          src={promo.image_url}
-          alt={promo.title}
-          fill
-          sizes="(min-width: 640px) 512px, 100vw"
-          className="object-cover"
-        />
-        <div
-          aria-hidden
-          className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-brand-dark to-transparent"
-        />
+    <>
+      <div
+        className={cn(
+          'relative flex w-full shrink-0 items-center justify-center overflow-hidden bg-black/40',
+          dimensions === null && 'aspect-[16/10]'
+        )}
+      >
+        {dimensions === null ? (
+          <Image
+            src={promo.image_url}
+            alt={promo.title}
+            fill
+            sizes="(min-width: 640px) 512px, 100vw"
+            className="object-cover opacity-80 blur-[2px]"
+            onLoad={handleImageLoad}
+          />
+        ) : (
+          <Image
+            src={promo.image_url}
+            alt={promo.title}
+            width={dimensions.width}
+            height={dimensions.height}
+            sizes="(min-width: 640px) 512px, 100vw"
+            className="h-auto max-h-[56dvh] w-auto max-w-full object-contain"
+          />
+        )}
         <button
           type="button"
           onClick={onClose}
@@ -46,6 +83,11 @@ export function PromoModal({ promo, onClose }: PromoModalProps) {
         <h2 className="font-heading text-xl leading-snug font-bold text-brand-light sm:text-2xl">
           {promo.title}
         </h2>
+        {dimensions && (
+          <p className="-mt-2 text-[11px] font-medium tracking-wide text-brand-light/35 tabular-nums">
+            Imagen original: {dimensions.width} × {dimensions.height} px
+          </p>
+        )}
         <p className="text-sm leading-relaxed text-brand-light/70">
           {promo.description?.trim() ||
             'Promoción vigente por tiempo limitado. Consulta condiciones y disponibilidad con nuestro equipo.'}
@@ -54,6 +96,6 @@ export function PromoModal({ promo, onClose }: PromoModalProps) {
           <UtensilsCrossed className="size-6 self-end text-brand-light/15" aria-hidden />
         )}
       </div>
-    </ModalShell>
+    </>
   );
 }
