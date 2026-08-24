@@ -18,9 +18,11 @@ interface ImageDimensions {
 }
 
 export function PromoModal({ promo, onClose }: PromoModalProps) {
+  if (!promo) return null;
+
   return (
-    <ModalShell onClose={onClose} label={promo?.title ?? 'Detalles de la promoción'}>
-      {promo && <PromoModalContent key={promo.id} promo={promo} onClose={onClose} />}
+    <ModalShell onClose={onClose} label={promo.title}>
+      <PromoModalContent key={promo.id} promo={promo} onClose={onClose} />
     </ModalShell>
   );
 }
