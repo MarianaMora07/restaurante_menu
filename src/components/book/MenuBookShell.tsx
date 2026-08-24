@@ -15,16 +15,25 @@ interface MenuBookShellProps {
   rate: UsdRateInfo | null;
 }
 
-/* Portada (landing): gira sobre su borde izquierdo como hoja de libro hacia la derecha. */
+/* Portada (landing): gira sobre su borde izquierdo como hoja de libro hacia la derecha.
+   El giro se limita a <90° y el fundido corre en paralelo: pasar del plano de la pantalla
+   colapsaría la portada en una línea clara al centro y bloquearía los clics hasta desmontar. */
 const coverVariants: Variants = {
-  hidden: { rotateY: 100 },
-  visible: { rotateY: 0 },
+  hidden: { rotateY: 78, opacity: 0 },
+  visible: {
+    rotateY: 0,
+    opacity: 1,
+    transition: {
+      rotateY: { duration: 0.8, ease: [0.22, 1, 0.36, 1] },
+      opacity: { duration: 0.28, ease: 'easeOut' },
+    },
+  },
   exit: {
-    rotateY: 100,
+    rotateY: 82,
     opacity: 0,
     transition: {
-      rotateY: { duration: 0.85, ease: [0.7, 0, 0.3, 1] },
-      opacity: { duration: 0.3, delay: 0.42 },
+      rotateY: { duration: 0.6, ease: [0.32, 0, 0.24, 1] },
+      opacity: { duration: 0.45, ease: 'easeIn' },
     },
   },
 };
