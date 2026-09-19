@@ -31,14 +31,20 @@ function formatRateDate(isoDate: string): string | null {
   }).format(date);
 }
 
+export type PickupType = 'tienda' | 'delivery';
+
 export function buildOrderWhatsAppUrl(
   items: CartItem[],
   customerName?: string,
-  rate?: UsdRateInfo | null
+  rate?: UsdRateInfo | null,
+  pickupType?: PickupType
 ): string {
   const lines = [`*NUEVO PEDIDO — ${siteConfig.name}*`];
   const name = customerName?.trim();
   if (name) lines.push(`Cliente: ${name}`);
+  if (pickupType) {
+    lines.push(`Retiro: ${pickupType === 'tienda' ? ' En Tienda' : ' Delivery'}`);
+  }
 
   lines.push('──────────────');
   let totalUsd = 0;

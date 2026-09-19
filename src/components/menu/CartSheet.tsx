@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageCircle, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
-import type { UsdRateInfo } from '@/types/database';
+import { Bike, Building2, MessageCircle, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
+import type { CartItem, PickupType, UsdRateInfo } from '@/types/database';
 import { buildOrderWhatsAppUrl, cn, formatPrice } from '@/lib/utils';
 import { siteConfig } from '@/config/site';
 import { ModalShell } from '@/components/ui/ModalShell';
 import { DualPrice } from '@/components/ui/DualPrice';
 import { useCart } from './CartContext';
+import { saveOrder } from '@/app/actions/orders';
 
 interface CartSheetProps {
   rate: UsdRateInfo | null;
@@ -25,11 +26,43 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
     clearCart,
   } = useCart();
   const [customerName, setCustomerName] = useState('');
+  const [pickupType, setPickupType] = useState<PickupType>('tienda');
+  const [isSending, setIsSending] = useState(false);
   const whatsappReady = Boolean(siteConfig.whatsappNumber);
 
-  function handleConfirm() {
-    window.open(buildOrderWhatsAppUrl(items, customerName, rate), '_blank', 'noopener,noreferrer');
+  async function handleConfirm() {
+    if (isSending) return;
+    setIsSending(true);
+
+    window.open(
+      buildOrderWhatsAppUrl(items, customerName, rate, pickupType),
+      '_blank',
+      'noopener,noreferrer'
+    );
+
+    const sidesTotal = items.reduce(
+      (sum, item) => sum + (item.sideDishes?.reduce((s, sd) => s + sd.price, 0) ?? 0) * item.quantity,
+      0
+    );
+    const itemsTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    await saveOrder({
+      customer_name: customerName.trim() || null,
+      items: items.map((item) => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        note: item.note?.trim() || undefined,
+        sideDishes: item.sideDishes ?? [],
+      })),
+      total_usd: itemsTotal + sidesTotal,
+      total_bs: rate ? (itemsTotal + sidesTotal) * rate.rate : null,
+      rate_usd: rate?.rate ?? null,
+      pickup_type: pickupType,
+    });
+
     clearCart();
+    setIsSending(false);
     onClose();
   }
 
@@ -124,10 +157,7 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
                     type="button"
                     onClick={() => removeItem(item.dishId)}
                     aria-label={`Eliminar ${item.name} del pedido`}
-                    className={cn(
-                      'flex size-8 shrink-0 items-center justify-center rounded-lg',
-                      'text-brand-light/40 transition-colors hover:bg-red-500/15 hover:text-red-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400'
-                    )}
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-brand-light/40 transition-colors hover:bg-red-500/15 hover:text-red-300"
                   >
                     <Trash2 className="size-4" aria-hidden />
                   </button>
@@ -137,6 +167,36 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
           </ul>
 
           <footer className="flex shrink-0 flex-col gap-3.5 border-t border-white/10 bg-white/[0.02] px-5 py-4 sm:px-6 sm:py-5">
+            {/* Tipo de retiro */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPickupType('tienda')}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold ring-1 transition-all',
+                  pickupType === 'tienda'
+                    ? 'bg-brand-accent/15 ring-brand-accent/40 text-brand-primary'
+                    : 'ring-white/[0.08] text-brand-light/50 hover:bg-white/[0.04]'
+                )}
+              >
+                <Building2 className="size-4" aria-hidden />
+                En Tienda
+              </button>
+              <button
+                type="button"
+                onClick={() => setPickupType('delivery')}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold ring-1 transition-all',
+                  pickupType === 'delivery'
+                    ? 'bg-brand-accent/15 ring-brand-accent/40 text-brand-primary'
+                    : 'ring-white/[0.08] text-brand-light/50 hover:bg-white/[0.04]'
+                )}
+              >
+                <Bike className="size-4" aria-hidden />
+                Delivery
+              </button>
+            </div>
+
             <input
               type="text"
               value={customerName}
@@ -159,11 +219,11 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
             <button
               type="button"
               onClick={handleConfirm}
-              disabled={!whatsappReady}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading font-bold text-brand-darker shadow-elevated transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              disabled={!whatsappReady || isSending}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading font-bold text-brand-darker shadow-elevated transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <MessageCircle className="size-5" aria-hidden />
-              Enviar pedido por WhatsApp
+              {isSending ? 'Enviando...' : 'Enviar pedido por WhatsApp'}
             </button>
             {!whatsappReady && (
               <p className="text-center text-xs text-brand-light/40">

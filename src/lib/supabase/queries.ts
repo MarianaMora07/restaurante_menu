@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Category, Dish, Promo, RateSettings } from '@/types/database';
+import type { Category, Dish, Order, Promo, RateSettings } from '@/types/database';
 
 export interface QueryResult<T> {
   data: T;
@@ -94,6 +94,21 @@ export async function getDishes(
 
     if (error) return { data: [], error: error.message };
     return { data: data ?? [], error: null };
+  } catch (e) {
+    return { data: [], error: e instanceof Error ? e.message : 'Unexpected error' };
+  }
+}
+
+export async function getOrders(): Promise<QueryResult<Order[]>> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) return { data: [], error: error.message };
+    return { data: (data as Order[]) ?? [], error: null };
   } catch (e) {
     return { data: [], error: e instanceof Error ? e.message : 'Unexpected error' };
   }

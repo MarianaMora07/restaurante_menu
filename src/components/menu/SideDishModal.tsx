@@ -1,10 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Check, Plus, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import type { Dish } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { ModalShell } from '@/components/ui/ModalShell';
+
+const MAX_SIDES = 3;
 
 interface SideDishModalProps {
   dish: Dish;
@@ -34,8 +36,11 @@ export function SideDishModal({ dish, availableSides, onConfirm, onSkip }: SideD
   function toggle(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else if (next.size < MAX_SIDES) {
+        next.add(id);
+      }
       return next;
     });
   }
@@ -57,6 +62,9 @@ export function SideDishModal({ dish, availableSides, onConfirm, onSkip }: SideD
           <h2 className="mt-0.5 font-heading text-base font-bold text-brand-light">
             Elige contornos para {dish.name}
           </h2>
+          <p className="mt-1 text-xs text-brand-light/40">
+            Máximo {MAX_SIDES} contornos · {selected.size}/{MAX_SIDES} seleccionados
+          </p>
         </div>
         <button
           type="button"
@@ -79,16 +87,20 @@ export function SideDishModal({ dish, availableSides, onConfirm, onSkip }: SideD
                 <div className="flex flex-col gap-2">
                   {items.map((side) => {
                     const isActive = selected.has(side.id);
+                    const isFull = !isActive && selected.size >= MAX_SIDES;
                     return (
                       <button
                         key={side.id}
                         type="button"
                         onClick={() => toggle(side.id)}
+                        disabled={isFull}
                         className={cn(
                           'flex items-center gap-3 rounded-xl px-3.5 py-3 text-left ring-1 transition-all',
                           isActive
                             ? 'bg-brand-accent/10 ring-brand-accent/40'
-                            : 'bg-white/[0.03] ring-white/[0.07] hover:bg-white/[0.06]'
+                            : isFull
+                              ? 'opacity-40 ring-white/[0.05] cursor-not-allowed'
+                              : 'bg-white/[0.03] ring-white/[0.07] hover:bg-white/[0.06]'
                         )}
                       >
                         <span

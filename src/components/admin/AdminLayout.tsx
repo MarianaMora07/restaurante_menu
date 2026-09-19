@@ -3,7 +3,7 @@
 import { useState, useCallback, useOptimistic, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
-import type { Category, Dish, Promo, RateConfig, AdminSection } from '@/types/database';
+import type { Category, Dish, Order, Promo, RateConfig, AdminSection } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { toggleDailyMenu, toggleDishAvailability } from '@/app/actions/dishes';
 import { togglePromoActive } from '@/app/actions/promos';
@@ -13,12 +13,14 @@ import { ContornosSection } from './ContornosSection';
 import { PromosSection } from './PromosSection';
 import { CategoriesSection } from './CategoriesSection';
 import { DailyMenuSection } from './DailyMenuSection';
+import { HistorySection } from './HistorySection';
 import { RateSettingsCard } from './RateSettingsCard';
 
 interface AdminLayoutProps {
   categories: Category[];
   dishes: Dish[];
   promos: Promo[];
+  orders: Order[];
   rateConfig: RateConfig;
 }
 
@@ -26,7 +28,7 @@ type DishFlag = { type: 'dish'; id: string; field: 'is_available' | 'is_daily_me
 type PromoFlag = { type: 'promo'; id: string; value: boolean };
 type FlagUpdate = DishFlag | PromoFlag;
 
-export function AdminLayout({ categories, dishes, promos, rateConfig }: AdminLayoutProps) {
+export function AdminLayout({ categories, dishes, promos, orders, rateConfig }: AdminLayoutProps) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<AdminSection>('menu');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -115,6 +117,7 @@ export function AdminLayout({ categories, dishes, promos, rateConfig }: AdminLay
             categories={categories}
             dishes={optimisticDishes}
             promos={optimisticPromos}
+            orders={orders}
             rateConfig={rateConfig}
             isPending={isPending}
             onDishToggle={handleDishToggle}
@@ -149,6 +152,7 @@ interface ContentRouterProps {
   categories: Category[];
   dishes: Dish[];
   promos: Promo[];
+  orders: Order[];
   rateConfig: RateConfig;
   isPending: boolean;
   onDishToggle: (dishId: string, field: 'is_available' | 'is_daily_menu', value: boolean, action: typeof toggleDishAvailability) => void;
@@ -160,6 +164,7 @@ function ContentRouter({
   categories,
   dishes,
   promos,
+  orders,
   rateConfig,
   isPending,
   onDishToggle,
@@ -208,5 +213,7 @@ function ContentRouter({
       return <CategoriesSection categories={categories} />;
     case 'daily-menu':
       return <DailyMenuSection categories={categories} dishes={dishes} rate={rateConfig.effective} />;
+    case 'history':
+      return <HistorySection orders={orders} />;
   }
 }

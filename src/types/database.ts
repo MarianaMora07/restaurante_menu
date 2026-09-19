@@ -27,7 +27,28 @@ export type CreateDishDTO = Omit<Dish, 'id' | 'created_at' | 'updated_at'>;
 export type UpdateDishDTO = Partial<CreateDishDTO>;
 export type CreateCategoryDTO = Omit<Category, 'id' | 'created_at'>;
 export type CategoryFilter = 'all' | 'daily' | string;
-export type AdminSection = 'menu' | 'rate' | 'promos' | 'categories' | 'contornos' | 'daily-menu';
+export type PickupType = 'tienda' | 'delivery';
+
+export interface OrderItem {
+  name: string;
+  price: number;
+  quantity: number;
+  note?: string;
+  sideDishes?: { id: string; name: string; price: number }[];
+}
+
+export interface Order {
+  id: string;
+  customer_name: string | null;
+  items: OrderItem[];
+  total_usd: number;
+  total_bs: number | null;
+  rate_usd: number | null;
+  pickup_type: PickupType;
+  created_at: string;
+}
+
+export type AdminSection = 'menu' | 'rate' | 'promos' | 'categories' | 'contornos' | 'daily-menu' | 'history';
 
 export interface OrderPayload {
   dishName: string;

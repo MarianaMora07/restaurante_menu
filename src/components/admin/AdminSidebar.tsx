@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, UtensilsCrossed, Banknote, Megaphone, FolderTree, Salad, CalendarDays, X } from 'lucide-react';
+import { LogOut, UtensilsCrossed, Banknote, Megaphone, FolderTree, Salad, CalendarDays, ClipboardList, X } from 'lucide-react';
 import type { AdminSection } from '@/types/database';
 import { siteConfig } from '@/config/site';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ const NAV_ITEMS: { section: AdminSection; label: string; icon: typeof UtensilsCr
   { section: 'promos', label: 'Promociones', icon: Megaphone },
   { section: 'categories', label: 'Categorías', icon: FolderTree },
   { section: 'daily-menu', label: 'Menú del Día', icon: CalendarDays },
+  { section: 'history', label: 'Historial', icon: ClipboardList },
 ];
 
 const sectionTitles: Record<AdminSection, string> = {
@@ -29,6 +30,7 @@ const sectionTitles: Record<AdminSection, string> = {
   promos: 'Promociones',
   categories: 'Categorías',
   'daily-menu': 'Generar Menú del Día',
+  history: 'Historial de Órdenes',
 };
 
 export function AdminSidebar({ activeSection, onNavigate, onLogout, isOpen, onClose }: AdminSidebarProps) {
