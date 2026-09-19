@@ -91,8 +91,8 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
     const priceValue = Number(price);
     if (!name.trim()) return setError('El nombre del plato es obligatorio.');
     if (!categoryId) return setError('Selecciona una categoría.');
-    if (!Number.isFinite(priceValue) || priceValue <= 0) {
-      return setError('Ingresa un precio válido mayor a cero.');
+    if (!Number.isFinite(priceValue) || priceValue < 0) {
+      return setError('Ingresa un precio válido.');
     }
 
     setIsSubmitting(true);

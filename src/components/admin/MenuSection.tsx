@@ -107,7 +107,7 @@ export function MenuSection({
                     isPending={isPending}
                     onToggleAvailability={(v) => onToggleAvailability(dish.id, v)}
                     onToggleDailyMenu={(v) => onToggleDailyMenu(dish.id, v)}
-                    onEdit={setEditingDish}
+                    onEdit={(dish) => { setEditingDish(dish); setIsFormOpen(true); }}
                   />
                 ))}
               </div>

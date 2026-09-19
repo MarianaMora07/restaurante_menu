@@ -29,6 +29,12 @@ export type CreateCategoryDTO = Omit<Category, 'id' | 'created_at'>;
 export type CategoryFilter = 'all' | 'daily' | string;
 export type PickupType = 'tienda' | 'delivery';
 
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  cost: number;
+}
+
 export interface OrderItem {
   name: string;
   price: number;
@@ -45,10 +51,12 @@ export interface Order {
   total_bs: number | null;
   rate_usd: number | null;
   pickup_type: PickupType;
+  delivery_zone: string | null;
+  delivery_cost: number | null;
   created_at: string;
 }
 
-export type AdminSection = 'menu' | 'rate' | 'promos' | 'categories' | 'contornos' | 'daily-menu' | 'history';
+export type AdminSection = 'menu' | 'rate' | 'promos' | 'categories' | 'contornos' | 'daily-menu' | 'history' | 'delivery-zones';
 
 export interface OrderPayload {
   dishName: string;

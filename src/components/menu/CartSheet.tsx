@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Bike, Building2, MessageCircle, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
-import type { CartItem, PickupType, UsdRateInfo } from '@/types/database';
+import { Bike, Building2, MapPin, MessageCircle, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
+import type { CartItem, DeliveryZone, PickupType, UsdRateInfo } from '@/types/database';
 import { buildOrderWhatsAppUrl, cn, formatPrice } from '@/lib/utils';
 import { siteConfig } from '@/config/site';
 import { ModalShell } from '@/components/ui/ModalShell';
@@ -12,10 +12,11 @@ import { saveOrder } from '@/app/actions/orders';
 
 interface CartSheetProps {
   rate: UsdRateInfo | null;
+  deliveryZones: DeliveryZone[];
   onClose: () => void;
 }
 
-export function CartSheet({ rate, onClose }: CartSheetProps) {
+export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
   const {
     items,
     total,
@@ -27,15 +28,20 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
   } = useCart();
   const [customerName, setCustomerName] = useState('');
   const [pickupType, setPickupType] = useState<PickupType>('tienda');
+  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [isSending, setIsSending] = useState(false);
   const whatsappReady = Boolean(siteConfig.whatsappNumber);
+
+  const selectedZone = deliveryZones.find((z) => z.id === selectedZoneId);
+  const deliveryCost = pickupType === 'delivery' && selectedZone ? selectedZone.cost : 0;
+  const totalWithDelivery = total + deliveryCost;
 
   async function handleConfirm() {
     if (isSending) return;
     setIsSending(true);
 
     window.open(
-      buildOrderWhatsAppUrl(items, customerName, rate, pickupType),
+      buildOrderWhatsAppUrl(items, customerName, rate, pickupType, selectedZone?.name, deliveryCost),
       '_blank',
       'noopener,noreferrer'
     );
@@ -45,6 +51,7 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
       0
     );
     const itemsTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const grandTotal = itemsTotal + sidesTotal + deliveryCost;
 
     await saveOrder({
       customer_name: customerName.trim() || null,
@@ -55,10 +62,12 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
         note: item.note?.trim() || undefined,
         sideDishes: item.sideDishes ?? [],
       })),
-      total_usd: itemsTotal + sidesTotal,
-      total_bs: rate ? (itemsTotal + sidesTotal) * rate.rate : null,
+      total_usd: grandTotal,
+      total_bs: rate ? grandTotal * rate.rate : null,
       rate_usd: rate?.rate ?? null,
       pickup_type: pickupType,
+      delivery_zone: selectedZone?.name ?? null,
+      delivery_cost: deliveryCost,
     });
 
     clearCart();
@@ -197,6 +206,27 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
               </button>
             </div>
 
+            {pickupType === 'delivery' && (
+              <div className="flex flex-col gap-1.5">
+                <label className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wider text-brand-light/40 uppercase">
+                  <MapPin className="size-3" aria-hidden />
+                  Zona de delivery
+                </label>
+                <select
+                  value={selectedZoneId}
+                  onChange={(e) => setSelectedZoneId(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-white/20 bg-white/[0.07] px-3.5 text-sm text-brand-light focus:border-brand-accent focus:outline-none"
+                >
+                  <option value="" className="bg-brand-dark text-brand-light">Seleccionar zona…</option>
+                  {deliveryZones.map((z) => (
+                    <option key={z.id} value={z.id} className="bg-brand-dark text-brand-light">
+                      {z.name} — {formatPrice(z.cost)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <input
               type="text"
               value={customerName}
@@ -206,15 +236,22 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
               aria-label="Nombre del cliente"
               className="h-10 w-full rounded-xl border border-white/20 bg-white/[0.07] px-3.5 text-sm text-brand-light placeholder:text-brand-light/45 focus:border-brand-accent focus:outline-none"
             />
-            <div className="flex items-end justify-between gap-3">
-              <span className="font-heading text-sm font-semibold tracking-wide text-brand-light/60 uppercase">
-                Total
-              </span>
-              <DualPrice
-                amount={total}
-                rate={rate}
-                className="font-heading text-lg font-bold text-brand-primary"
-              />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-end justify-between gap-3">
+                <span className="font-heading text-sm font-semibold tracking-wide text-brand-light/60 uppercase">
+                  Total
+                </span>
+                <DualPrice
+                  amount={totalWithDelivery}
+                  rate={rate}
+                  className="font-heading text-lg font-bold text-brand-primary"
+                />
+              </div>
+              {pickupType === 'delivery' && deliveryCost > 0 && (
+                <p className="text-right text-[11px] text-brand-light/35">
+                  Incluye delivery {selectedZone?.name}: {formatPrice(deliveryCost)}
+                </p>
+              )}
             </div>
             <button
               type="button"

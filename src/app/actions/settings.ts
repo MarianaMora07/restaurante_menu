@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
 import type { ActionResult } from './dishes';
-import type { RateMode } from '@/types/database';
+import type { DeliveryZone, RateMode } from '@/types/database';
 
 const MIN_ADJUST_PERCENT = -90;
 const MAX_ADJUST_PERCENT = 500;
@@ -35,6 +35,23 @@ export async function saveRateSettings(payload: {
     if (error) return { success: false, error: error.message };
 
     revalidatePath('/');
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Unexpected error' };
+  }
+}
+
+export async function saveDeliveryZones(zones: DeliveryZone[]): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert(
+        { key: 'delivery_zones', value: JSON.stringify(zones) },
+        { onConflict: 'key' }
+      );
+    if (error) return { success: false, error: error.message };
     revalidatePath('/dashboard');
     return { success: true };
   } catch (e) {

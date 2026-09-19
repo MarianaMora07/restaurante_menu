@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, ShoppingBag, UtensilsCrossed } from 'lucide-react';
-import type { Category, Dish, Promo, UsdRateInfo } from '@/types/database';
+import type { Category, DeliveryZone, Dish, Promo, UsdRateInfo } from '@/types/database';
 import { siteConfig } from '@/config/site';
 import { formatPrice } from '@/lib/utils';
 import { CategoryTabs } from './CategoryTabs';
@@ -19,6 +19,7 @@ interface MenuViewProps {
   categories: Category[];
   dishes: Dish[];
   promos?: Promo[];
+  deliveryZones?: DeliveryZone[];
   rate?: UsdRateInfo | null;
   onBack?: () => void;
 }
@@ -41,6 +42,7 @@ function MenuViewContent({
   categories,
   dishes,
   promos = [],
+  deliveryZones = [],
   rate = null,
   onBack,
 }: MenuViewProps) {
@@ -245,7 +247,7 @@ function MenuViewContent({
         }}
       />
       <PromoModal promo={selectedPromo} onClose={() => setSelectedPromo(null)} />
-      {isCartOpen && <CartSheet rate={rate} onClose={() => setIsCartOpen(false)} />}
+      {isCartOpen && <CartSheet rate={rate} deliveryZones={deliveryZones} onClose={() => setIsCartOpen(false)} />}
       {sideDishTarget && (
         <SideDishModal
           dish={sideDishTarget}

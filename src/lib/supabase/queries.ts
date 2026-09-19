@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Category, Dish, Order, Promo, RateSettings } from '@/types/database';
+import type { Category, DeliveryZone, Dish, Order, Promo, RateSettings } from '@/types/database';
 
 export interface QueryResult<T> {
   data: T;
@@ -111,5 +111,36 @@ export async function getOrders(): Promise<QueryResult<Order[]>> {
     return { data: (data as Order[]) ?? [], error: null };
   } catch (e) {
     return { data: [], error: e instanceof Error ? e.message : 'Unexpected error' };
+  }
+}
+
+const DEFAULT_DELIVERY_ZONES: DeliveryZone[] = [
+  { id: 'centro', name: 'Centro', cost: 1.0 },
+  { id: 'la-llovizna', name: 'La Llovizna', cost: 1.5 },
+  { id: 'san-felix', name: 'San Félix', cost: 2.0 },
+  { id: 'villa-bolivia', name: 'Villa Bolivia', cost: 1.5 },
+  { id: 'alta-vista', name: 'Alta Vista', cost: 2.0 },
+  { id: 'los-pueblos', name: 'Los Pueblos', cost: 2.5 },
+  { id: 'el-roble', name: 'El Roble', cost: 2.0 },
+  { id: 'paragua', name: 'Paragua', cost: 3.0 },
+];
+
+export async function getDeliveryZones(): Promise<QueryResult<DeliveryZone[]>> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'delivery_zones')
+      .maybeSingle();
+    if (error || !data) return { data: DEFAULT_DELIVERY_ZONES, error: error?.message ?? null };
+    try {
+      const parsed = JSON.parse(data.value) as DeliveryZone[];
+      return { data: parsed.length > 0 ? parsed : DEFAULT_DELIVERY_ZONES, error: null };
+    } catch {
+      return { data: DEFAULT_DELIVERY_ZONES, error: null };
+    }
+  } catch (e) {
+    return { data: DEFAULT_DELIVERY_ZONES, error: e instanceof Error ? e.message : 'Unexpected error' };
   }
 }

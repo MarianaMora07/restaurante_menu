@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion/react';
-import type { Category, Dish, Promo, UsdRateInfo } from '@/types/database';
+import type { Category, DeliveryZone, Dish, Promo, UsdRateInfo } from '@/types/database';
 import { LandingView } from '@/components/landing/LandingView';
 import { MenuView } from '@/components/menu/MenuView';
 
@@ -12,6 +12,7 @@ interface MenuBookShellProps {
   promos: Promo[];
   categories: Category[];
   dishes: Dish[];
+  deliveryZones: DeliveryZone[];
   rate: UsdRateInfo | null;
 }
 
@@ -53,7 +54,7 @@ const fadeVariants: Variants = {
   exit: { opacity: 0 },
 };
 
-export function MenuBookShell({ promos, categories, dishes, rate }: MenuBookShellProps) {
+export function MenuBookShell({ promos, categories, dishes, deliveryZones, rate }: MenuBookShellProps) {
   const [page, setPage] = useState<BookPage>('landing');
   const prefersReducedMotion = useReducedMotion();
 
@@ -110,6 +111,7 @@ export function MenuBookShell({ promos, categories, dishes, rate }: MenuBookShel
               categories={categories}
               dishes={dishes}
               promos={promos}
+              deliveryZones={deliveryZones}
               rate={rate}
               onBack={closeMenu}
             />

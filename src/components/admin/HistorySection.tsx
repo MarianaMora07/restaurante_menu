@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Bike, Building2, ClipboardList } from 'lucide-react';
+import { Bike, Building2, ClipboardList, MapPin } from 'lucide-react';
 import type { Order } from '@/types/database';
 import { cn, formatBolivares, formatPrice } from '@/lib/utils';
 
@@ -275,6 +275,12 @@ export function HistorySection({ orders }: HistorySectionProps) {
                         >
                           {order.pickup_type === 'delivery' ? 'Delivery' : 'Tienda'}
                         </span>
+                        {order.pickup_type === 'delivery' && order.delivery_zone && (
+                          <span className="hidden shrink-0 items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] text-brand-light/50 sm:flex">
+                            <MapPin className="size-2.5" aria-hidden />
+                            {order.delivery_zone}
+                          </span>
+                        )}
                         <span className="shrink-0 text-sm font-bold text-brand-light">
                           {formatPrice(order.total_usd)}
                         </span>
@@ -318,6 +324,11 @@ export function HistorySection({ orders }: HistorySectionProps) {
                           {order.rate_usd && (
                             <p className="mt-2 border-t border-white/[0.06] pt-2 text-[11px] text-brand-light/30">
                               Tasa: {formatBolivares(order.rate_usd)}/USD
+                            </p>
+                          )}
+                          {order.delivery_zone && (order.delivery_cost ?? 0) > 0 && (
+                            <p className="text-[11px] text-brand-light/30">
+                              Delivery {order.delivery_zone}: +{formatPrice(order.delivery_cost!)}
                             </p>
                           )}
                         </div>

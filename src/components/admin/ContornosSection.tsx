@@ -91,7 +91,7 @@ export function ContornosSection({
                     isPending={isPending}
                     onToggleAvailability={(v) => onToggleAvailability(dish.id, v)}
                     onToggleDailyMenu={(v) => onToggleDailyMenu(dish.id, v)}
-                    onEdit={setEditing}
+                    onEdit={(dish) => { setEditing(dish); setIsFormOpen(true); }}
                   />
                 ))}
               </div>

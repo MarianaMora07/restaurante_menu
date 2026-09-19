@@ -16,6 +16,8 @@ export async function saveOrder(payload: {
   total_bs: number | null;
   rate_usd: number | null;
   pickup_type: PickupType;
+  delivery_zone?: string | null;
+  delivery_cost?: number;
 }): Promise<ActionResult> {
   try {
     const supabase = await createClient();
@@ -26,6 +28,8 @@ export async function saveOrder(payload: {
       total_bs: payload.total_bs,
       rate_usd: payload.rate_usd,
       pickup_type: payload.pickup_type,
+      delivery_zone: payload.delivery_zone ?? null,
+      delivery_cost: payload.delivery_cost ?? 0,
     });
 
     if (error) return { success: false, error: error.message };

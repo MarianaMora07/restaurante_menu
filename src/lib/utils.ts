@@ -37,13 +37,19 @@ export function buildOrderWhatsAppUrl(
   items: CartItem[],
   customerName?: string,
   rate?: UsdRateInfo | null,
-  pickupType?: PickupType
+  pickupType?: PickupType,
+  deliveryZone?: string,
+  deliveryCost?: number
 ): string {
   const lines = [`*NUEVO PEDIDO — ${siteConfig.name}*`];
   const name = customerName?.trim();
   if (name) lines.push(`Cliente: ${name}`);
   if (pickupType) {
-    lines.push(`Retiro: ${pickupType === 'tienda' ? ' En Tienda' : ' Delivery'}`);
+    const label = pickupType === 'tienda' ? ' En Tienda' : ' Delivery';
+    lines.push(`Retiro: ${label}`);
+    if (pickupType === 'delivery' && deliveryZone) {
+      lines.push(`Zona: ${deliveryZone}${deliveryCost ? ` (+${formatPrice(deliveryCost)})` : ''}`);
+    }
   }
 
   lines.push('──────────────');
@@ -66,6 +72,10 @@ export function buildOrderWhatsAppUrl(
     if (note) lines.push(`   ↳ ${note}`);
   }
   lines.push('──────────────');
+  if (deliveryCost && deliveryCost > 0) {
+    totalUsd += deliveryCost;
+    lines.push(`Delivery (${deliveryZone}): +${formatPrice(deliveryCost)}`);
+  }
   lines.push(
     `*TOTAL: ${formatPrice(totalUsd)}${rate ? ` · ${formatBolivares(totalUsd * rate.rate)}` : ''}*`
   );

@@ -12,6 +12,8 @@ create table if not exists public.orders (
   rate_usd numeric(10,4),
   pickup_type text not null default 'tienda'
     check (pickup_type in ('tienda', 'delivery')),
+  delivery_zone text,
+  delivery_cost numeric(10,2) default 0,
   created_at timestamptz not null default now()
 );
 
