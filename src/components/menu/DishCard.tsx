@@ -5,17 +5,16 @@ import { Plus, UtensilsCrossed } from 'lucide-react';
 import type { Dish, UsdRateInfo } from '@/types/database';
 import { cn } from '@/lib/utils';
 import { DualPrice } from '@/components/ui/DualPrice';
-import { useCart } from './CartContext';
 
 interface DishCardProps {
   dish: Dish;
   rate: UsdRateInfo | null;
   onOpen: (dish: Dish) => void;
+  onRequestAdd: (dish: Dish) => void;
 }
 
-export function DishCard({ dish, rate, onOpen }: DishCardProps) {
+export function DishCard({ dish, rate, onOpen, onRequestAdd }: DishCardProps) {
   const soldOut = !dish.is_available;
-  const { addDish } = useCart();
 
   return (
     <div className="group flex w-full flex-col overflow-hidden rounded-2xl bg-brand-dark shadow-elevated ring-1 ring-white/[0.06] transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover hover:ring-brand-primary/30 focus-within:ring-brand-primary/50">
@@ -80,7 +79,7 @@ export function DishCard({ dish, rate, onOpen }: DishCardProps) {
         />
         <button
           type="button"
-          onClick={() => addDish(dish)}
+          onClick={() => onRequestAdd(dish)}
           disabled={soldOut}
           aria-label={`Agregar ${dish.name} al pedido`}
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-accent to-brand-primary px-3.5 font-heading text-xs font-bold text-brand-darker shadow-glow-accent transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:saturate-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"

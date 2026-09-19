@@ -3,6 +3,7 @@ export interface Category {
   name: string;
   slug: string;
   display_order: number;
+  parent_id: string | null;
   created_at?: string;
 }
 
@@ -16,6 +17,8 @@ export interface Dish {
   image_url: string | null;
   is_available: boolean;
   is_daily_menu: boolean;
+  is_side_dish: boolean;
+  side_dish_group: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -24,6 +27,7 @@ export type CreateDishDTO = Omit<Dish, 'id' | 'created_at' | 'updated_at'>;
 export type UpdateDishDTO = Partial<CreateDishDTO>;
 export type CreateCategoryDTO = Omit<Category, 'id' | 'created_at'>;
 export type CategoryFilter = 'all' | 'daily' | string;
+export type AdminSection = 'menu' | 'rate' | 'promos' | 'categories' | 'contornos' | 'daily-menu';
 
 export interface OrderPayload {
   dishName: string;
@@ -50,6 +54,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   note?: string;
+  sideDishes?: { id: string; name: string; price: number }[];
 }
 
 export type RateMode = 'bcv' | 'custom';

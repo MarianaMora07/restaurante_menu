@@ -16,7 +16,7 @@ import {
 import { AiDescriptionField } from '@/components/ui/AiDescriptionField';
 import { ModalShell } from '@/components/ui/ModalShell';
 
-interface DishFormModalProps {
+interface ContornoFormModalProps {
   dish: Dish | null;
   categories: Category[];
   onClose: () => void;
@@ -24,13 +24,14 @@ interface DishFormModalProps {
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-export function DishFormModal({ dish, categories, onClose }: DishFormModalProps) {
+export function ContornoFormModal({ dish, categories, onClose }: ContornoFormModalProps) {
   const [name, setName] = useState(dish?.name ?? '');
   const [categoryId, setCategoryId] = useState(dish?.category_id ?? '');
   const [price, setPrice] = useState(dish ? String(dish.price) : '');
   const [description, setDescription] = useState(dish?.description ?? '');
   const [ingredients, setIngredients] = useState<string[]>(dish?.ingredients ?? []);
   const [ingredientInput, setIngredientInput] = useState('');
+  const [sideDishGroup, setSideDishGroup] = useState(dish?.side_dish_group ?? '');
   const [isAvailable, setIsAvailable] = useState(dish?.is_available ?? true);
   const [isDailyMenu, setIsDailyMenu] = useState(dish?.is_daily_menu ?? false);
   const [file, setFile] = useState<File | null>(null);
@@ -43,10 +44,8 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
     if (!name.trim() || isGeneratingDescription) return;
     setIsGeneratingDescription(true);
     setError(null);
-
     const result = await generateDishDescription(name);
     setIsGeneratingDescription(false);
-
     if (!result.success || !result.description) {
       setError(result.error ?? 'No se pudo generar la descripción con IA.');
       return;
@@ -55,17 +54,14 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
   }
 
   function addIngredient(raw: string) {
-    const parts = raw
-      .split(',')
-      .map((part) => part.trim())
-      .filter(Boolean);
+    const parts = raw.split(',').map((p) => p.trim()).filter(Boolean);
     if (parts.length === 0) return;
     setIngredients((prev) => [...new Set([...prev, ...parts])]);
     setIngredientInput('');
   }
 
   function removeIngredient(ingredient: string) {
-    setIngredients((prev) => prev.filter((item) => item !== ingredient));
+    setIngredients((prev) => prev.filter((i) => i !== ingredient));
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -87,10 +83,9 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
-
     const priceValue = Number(price);
-    if (!name.trim()) return setError('El nombre del plato es obligatorio.');
-    if (!categoryId) return setError('Selecciona una categoría.');
+    if (!name.trim()) return setError('El nombre del contorno es obligatorio.');
+    if (!categoryId) return setError('Selecciona una categoría asociada.');
     if (!Number.isFinite(priceValue) || priceValue <= 0) {
       return setError('Ingresa un precio válido mayor a cero.');
     }
@@ -120,12 +115,12 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
         image_url: imageUrl,
         is_available: isAvailable,
         is_daily_menu: isDailyMenu,
-        is_side_dish: dish?.is_side_dish ?? false,
-        side_dish_group: dish?.side_dish_group ?? null,
+        is_side_dish: true,
+        side_dish_group: sideDishGroup.trim() || null,
       });
 
       if (!result.success) {
-        setError(result.error ?? 'No se pudo guardar el plato.');
+        setError(result.error ?? 'No se pudo guardar el contorno.');
         setIsSubmitting(false);
         return;
       }
@@ -137,13 +132,11 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
 
   async function handleDelete() {
     if (!dish || !window.confirm(`¿Eliminar "${dish.name}" permanentemente?`)) return;
-
     setIsSubmitting(true);
     const result = await deleteDish(dish.id);
     setIsSubmitting(false);
-
     if (!result.success) {
-      setError(result.error ?? 'No se pudo eliminar el plato.');
+      setError(result.error ?? 'No se pudo eliminar.');
       return;
     }
     onClose();
@@ -152,21 +145,21 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
   return (
     <ModalShell
       onClose={onClose}
-      label={dish ? `Editando ${dish.name}` : 'Nuevo platillo'}
+      label={dish ? `Editando ${dish.name}` : 'Nuevo contorno'}
     >
       <div className="flex items-start justify-between gap-3 border-b border-white/10 px-6 py-4">
         <div>
           <p className="text-xs font-semibold tracking-[0.16em] text-brand-primary uppercase">
-            {dish ? 'Editando platillo' : 'Nuevo registro'}
+            {dish ? 'Editando contorno' : 'Nuevo contorno'}
           </p>
-          <h2 className="mt-0.5 font-heading text-lg leading-snug font-bold text-brand-light">
-            {dish ? `Editando Platillo: ${dish.name}` : 'Crear Nuevo Platillo para el Menú'}
+          <h2 className="mt-0.5 font-heading text-lg font-bold text-brand-light">
+            {dish ? dish.name : 'Crear Contorno'}
           </h2>
         </div>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Cerrar formulario"
+          aria-label="Cerrar"
           className="rounded-full p-2 text-brand-light/40 transition-colors hover:bg-white/[0.07] hover:text-brand-light"
         >
           <X className="size-5" aria-hidden />
@@ -174,22 +167,19 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5 overflow-y-auto p-6">
-        <Field
-          label="Imagen del platillo"
-          hint="Sube una imagen representativa para la ficha del platillo."
-        >
+        <Field label="Imagen">
           <span className="group relative block aspect-[4/3] w-full cursor-pointer overflow-hidden rounded-xl bg-white/[0.04] ring-1 ring-white/15 transition-colors hover:ring-brand-accent/50">
             {previewUrl ? (
               <Image
                 src={previewUrl}
-                alt="Vista previa del platillo"
+                alt="Vista previa"
                 fill
                 sizes="512px"
                 className="object-cover"
               />
             ) : (
               <span className="flex h-full items-center justify-center text-sm text-brand-light/55">
-                Haz clic para subir una imagen
+                Haz clic para subir
               </span>
             )}
             <input
@@ -206,27 +196,23 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Ej: Pasta Carbonara"
+            placeholder="Ej: Ensalada Caesar"
             required
             className={inputClasses}
           />
         </Field>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Categoría">
+          <Field label="Categoría asociada">
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               required
               className={selectClasses}
             >
-              <option value="" disabled>
-                Selecciona…
-              </option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
+              <option value="" disabled>Selecciona...</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
           </Field>
@@ -245,6 +231,19 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
           </Field>
         </div>
 
+        <Field
+          label="Grupo de contorno"
+          hint="Agrupa contornos relacionados para el menú (ej: Ensaladas, Tubérculos, Guarniciones)."
+        >
+          <input
+            type="text"
+            value={sideDishGroup}
+            onChange={(e) => setSideDishGroup(e.target.value)}
+            placeholder="Ej: Ensaladas"
+            className={inputClasses}
+          />
+        </Field>
+
         <AiDescriptionField
           value={description}
           onChange={setDescription}
@@ -252,12 +251,12 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
           isGenerating={isGeneratingDescription}
           canGenerate={name.trim().length > 0}
           disabled={isSubmitting}
-          placeholder="Descripción breve del plato…"
+          placeholder="Descripción breve del contorno..."
         />
 
         <Field
           label="Ingredientes"
-          hint="Escribe los ingredientes separados por comas. Se mostrarán como etiquetas visuales en la ficha del plato."
+          hint="Escribe los ingredientes separados por comas."
         >
           <input
             type="text"
@@ -270,7 +269,7 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
               }
             }}
             onBlur={() => addIngredient(ingredientInput)}
-            placeholder="Ej: pasta, huevo, parmesano, panceta"
+            placeholder="Ej: lechuga, tomate, pollo"
             className={inputClasses}
           />
           {ingredients.length > 0 && (
@@ -293,7 +292,7 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
 
         <fieldset className="flex flex-col gap-4 rounded-xl bg-white/[0.03] p-4 ring-1 ring-white/[0.07]">
           <legend className="px-1 font-heading text-xs font-semibold tracking-[0.14em] text-brand-light/60 uppercase">
-            Estado en la vista pública
+            Estado
           </legend>
           <label className="flex cursor-pointer items-start gap-3 select-none">
             <input
@@ -305,8 +304,7 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
             <span>
               <span className="block text-sm font-semibold text-brand-light">Disponible</span>
               <span className="mt-0.5 block text-xs leading-relaxed text-brand-light/50">
-                Desactivar esta opción mostrará el plato con la insignia &quot;Agotado&quot; en
-                la vista pública sin eliminarlo del catálogo.
+                Desactivar mostrará el contorno como &quot;Agotado&quot;.
               </span>
             </span>
           </label>
@@ -320,18 +318,14 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
             <span>
               <span className="block text-sm font-semibold text-brand-light">Menú del Día</span>
               <span className="mt-0.5 block text-xs leading-relaxed text-brand-light/50">
-                Al activar esta opción, el plato aparecerá destacado en la sección especial
-                &quot;Menú del Día&quot; de la vista pública.
+                Aparecerá en la sección de menú del día.
               </span>
             </span>
           </label>
         </fieldset>
 
         {error && (
-          <p
-            role="alert"
-            className="rounded-xl bg-red-500/15 px-4 py-3 text-sm font-medium text-red-300 ring-1 ring-red-500/30"
-          >
+          <p role="alert" className="rounded-xl bg-red-500/15 px-4 py-3 text-sm font-medium text-red-300 ring-1 ring-red-500/30">
             {error}
           </p>
         )}
@@ -353,9 +347,9 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
           <button
             type="submit"
             disabled={isSubmitting}
-            className="h-11 rounded-xl bg-brand-accent px-6 font-heading text-sm font-bold text-brand-darker transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="h-11 rounded-xl bg-brand-accent px-6 font-heading text-sm font-bold text-brand-darker transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
           >
-            {isSubmitting ? 'Guardando…' : dish ? 'Guardar cambios' : 'Crear platillo'}
+            {isSubmitting ? 'Guardando...' : dish ? 'Guardar cambios' : 'Crear contorno'}
           </button>
         </div>
       </form>

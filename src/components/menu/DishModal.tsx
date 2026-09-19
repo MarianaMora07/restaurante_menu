@@ -12,11 +12,18 @@ interface DishModalProps {
   dish: Dish | null;
   rate?: UsdRateInfo | null;
   onClose: () => void;
+  onRequestAdd?: (dish: Dish) => void;
 }
 
-export function DishModal({ dish, rate = null, onClose }: DishModalProps) {
+export function DishModal({ dish, rate = null, onClose, onRequestAdd }: DishModalProps) {
   const { addDish } = useCart();
   if (!dish) return null;
+  const currentDish = dish;
+
+  function handleAdd() {
+    if (onRequestAdd) onRequestAdd(currentDish);
+    else addDish(currentDish);
+  }
 
   return (
     <ModalShell onClose={onClose} aria-label={dish.name}>
@@ -89,7 +96,7 @@ export function DishModal({ dish, rate = null, onClose }: DishModalProps) {
         <div className="mt-1 flex flex-col gap-2">
           <button
             type="button"
-            onClick={() => addDish(dish)}
+            onClick={handleAdd}
             disabled={!dish.is_available}
             className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading font-bold text-brand-darker shadow-elevated transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:saturate-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           >

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
-import { Flame, UtensilsCrossed } from 'lucide-react';
+import { Flame, Salad, UtensilsCrossed } from 'lucide-react';
 import type { Category } from '@/types/database';
 import { cn } from '@/lib/utils';
 
@@ -10,9 +10,10 @@ interface CategoryTabsProps {
   categories: Category[];
   activeCategory: string;
   onSelect: (categoryId: string) => void;
+  hasSideDishes?: boolean;
 }
 
-export function CategoryTabs({ categories, activeCategory, onSelect }: CategoryTabsProps) {
+export function CategoryTabs({ categories, activeCategory, onSelect, hasSideDishes }: CategoryTabsProps) {
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,6 +44,12 @@ export function CategoryTabs({ categories, activeCategory, onSelect }: CategoryT
           <UtensilsCrossed className="size-4 shrink-0" aria-hidden />
           Todo
         </TabButton>
+        {hasSideDishes && (
+          <TabButton active={activeCategory === 'contornos'} onClick={() => onSelect('contornos')}>
+            <Salad className="size-4 shrink-0" aria-hidden />
+            Contornos
+          </TabButton>
+        )}
         {categories.map((category) => (
           <TabButton
             key={category.id}

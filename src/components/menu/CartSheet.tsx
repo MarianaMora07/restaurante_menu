@@ -63,7 +63,7 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
             {items.map((item) => (
               <li
                 key={item.dishId}
-                className="flex flex-col gap-2.5 rounded-xl bg-white/[0.04] p-3.5 ring-1 ring-white/[0.06]"
+                className="flex flex-col gap-2 rounded-xl bg-white/[0.04] p-3.5 ring-1 ring-white/[0.06]"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -73,11 +73,21 @@ export function CartSheet({ rate, onClose }: CartSheetProps) {
                     </p>
                   </div>
                   <DualPrice
-                    amount={item.price * item.quantity}
+                    amount={(item.price + (item.sideDishes?.reduce((s, sd) => s + sd.price, 0) ?? 0)) * item.quantity}
                     rate={rate}
                     className="shrink-0 font-heading text-sm font-bold text-brand-primary"
                   />
                 </div>
+                {item.sideDishes && item.sideDishes.length > 0 && (
+                  <ul className="flex flex-col gap-1 rounded-lg bg-brand-primary/[0.06] px-3 py-2 ring-1 ring-brand-primary/10">
+                    {item.sideDishes.map((side) => (
+                      <li key={side.id} className="flex items-center justify-between text-[11px]">
+                        <span className="text-brand-light/70">+ {side.name}</span>
+                        <span className="font-medium text-brand-primary/80">{formatPrice(side.price)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 <div className="flex items-center gap-2.5">
                   <div className="flex shrink-0 items-center rounded-lg bg-white/[0.06] ring-1 ring-white/10">
                     <button

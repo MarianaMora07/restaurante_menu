@@ -9,6 +9,7 @@ import { formatPrice } from '@/lib/utils';
 import { CategoryTabs } from './CategoryTabs';
 import { DishCard } from './DishCard';
 import { DishModal } from './DishModal';
+import { SideDishModal } from './SideDishModal';
 import { PromoCarousel } from './PromoCarousel';
 import { PromoModal } from './PromoModal';
 import { CartSheet } from './CartSheet';
@@ -49,15 +50,36 @@ function MenuViewContent({
   const [selectedDish, setSelectedDish] = useState<Dish | null>(null);
   const [selectedPromo, setSelectedPromo] = useState<Promo | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const { count, total } = useCart();
+  const [sideDishTarget, setSideDishTarget] = useState<Dish | null>(null);
+  const { count, total, addDishWithSides } = useCart();
+
+  const availableSides = useMemo(
+    () => dishes.filter((d) => d.is_side_dish && d.is_available),
+    [dishes]
+  );
+
+  const dailySides = useMemo(
+    () => dishes.filter((d) => d.is_side_dish && d.is_daily_menu && d.is_available),
+    [dishes]
+  );
+
+  const hasSideDishes = availableSides.length > 0;
 
   const groups = useMemo<DishGroup[]>(() => {
     if (activeCategory === 'daily') {
+      const mainDishes = dishes.filter((d) => d.is_daily_menu && !d.is_side_dish);
+      const sideDishes = dailySides;
+      const result: DishGroup[] = [];
+      if (mainDishes.length > 0) result.push({ id: 'daily-main', name: 'Platos Principales', dishes: mainDishes });
+      if (sideDishes.length > 0) result.push({ id: 'daily-sides', name: 'Contornos del Día', dishes: sideDishes });
+      return result;
+    }
+    if (activeCategory === 'contornos') {
       return [
         {
-          id: 'daily',
-          name: 'Menú del Día',
-          dishes: dishes.filter((dish) => dish.is_daily_menu),
+          id: 'contornos',
+          name: 'Contornos',
+          dishes: availableSides,
         },
       ];
     }
@@ -68,7 +90,9 @@ function MenuViewContent({
             {
               id: category.id,
               name: category.name,
-              dishes: dishes.filter((dish) => dish.category_id === category.id),
+              dishes: dishes.filter(
+                (dish) => dish.category_id === category.id && !dish.is_side_dish
+              ),
             },
           ]
         : [];
@@ -77,12 +101,17 @@ function MenuViewContent({
       .map((category) => ({
         id: category.id,
         name: category.name,
-        dishes: dishes.filter((dish) => dish.category_id === category.id),
+        dishes: dishes.filter(
+          (dish) => dish.category_id === category.id && !dish.is_side_dish
+        ),
       }))
       .filter((group) => group.dishes.length > 0);
-  }, [activeCategory, categories, dishes]);
+  }, [activeCategory, categories, dishes, availableSides]);
 
-  const visiblePromos = promos.slice(0, 8);
+  const visiblePromos = useMemo(
+    () => promos.filter((p) => p.is_active).slice(0, 8),
+    [promos]
+  );
 
   return (
     <div className="flex min-h-dvh flex-col bg-brand-darker">
@@ -110,6 +139,7 @@ function MenuViewContent({
           categories={categories}
           activeCategory={activeCategory}
           onSelect={setActiveCategory}
+          hasSideDishes={hasSideDishes}
         />
       </header>
 
@@ -153,7 +183,16 @@ function MenuViewContent({
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
                   {group.dishes.map((dish) => (
-                    <DishCard key={dish.id} dish={dish} rate={rate} onOpen={setSelectedDish} />
+                    <DishCard
+                      key={dish.id}
+                      dish={dish}
+                      rate={rate}
+                      onOpen={setSelectedDish}
+                      onRequestAdd={(d) => {
+                        if (availableSides.length > 0 && !d.is_side_dish) setSideDishTarget(d);
+                        else addDishWithSides(d, []);
+                      }}
+                    />
                   ))}
                 </div>
               </motion.section>
@@ -191,9 +230,36 @@ function MenuViewContent({
         </motion.button>
       )}
 
-      <DishModal dish={selectedDish} rate={rate} onClose={() => setSelectedDish(null)} />
+      <DishModal
+        dish={selectedDish}
+        rate={rate}
+        onClose={() => setSelectedDish(null)}
+        onRequestAdd={(d) => {
+          if (availableSides.length > 0 && !d.is_side_dish) {
+            setSelectedDish(null);
+            setSideDishTarget(d);
+          } else {
+            addDishWithSides(d, []);
+            setSelectedDish(null);
+          }
+        }}
+      />
       <PromoModal promo={selectedPromo} onClose={() => setSelectedPromo(null)} />
       {isCartOpen && <CartSheet rate={rate} onClose={() => setIsCartOpen(false)} />}
+      {sideDishTarget && (
+        <SideDishModal
+          dish={sideDishTarget}
+          availableSides={availableSides}
+          onConfirm={(sides) => {
+            addDishWithSides(sideDishTarget, sides);
+            setSideDishTarget(null);
+          }}
+          onSkip={() => {
+            addDishWithSides(sideDishTarget, []);
+            setSideDishTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }

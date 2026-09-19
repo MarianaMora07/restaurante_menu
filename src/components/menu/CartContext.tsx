@@ -18,6 +18,7 @@ interface CartContextValue {
   count: number;
   total: number;
   addDish: (dish: Dish) => void;
+  addDishWithSides: (dish: Dish, sideDishes: { id: string; name: string; price: number }[]) => void;
   incrementItem: (dishId: string) => void;
   decrementItem: (dishId: string) => void;
   setItemNote: (dishId: string, note: string) => void;
@@ -50,6 +51,9 @@ function sanitizeItems(raw: unknown): CartItem[] {
         price: item.price,
         quantity: Math.max(1, Math.floor(item.quantity)),
         note: typeof item.note === 'string' && item.note.trim() ? item.note : undefined,
+        sideDishes: Array.isArray(item.sideDishes)
+          ? (item.sideDishes as { id: string; name: string; price: number }[])
+          : undefined,
       },
     ];
   });
@@ -119,6 +123,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const addDishWithSides = useCallback((dish: Dish, sideDishes: { id: string; name: string; price: number }[]) => {
+    if (!dish.is_available) return;
+    commitItems((prev) => {
+      const existing = prev.find((item) => item.dishId === dish.id);
+      if (!existing) {
+        return [...prev, { dishId: dish.id, name: dish.name, price: dish.price, quantity: 1, sideDishes: sideDishes.length > 0 ? sideDishes : undefined }];
+      }
+      return prev.map((item) =>
+        item.dishId === dish.id ? { ...item, quantity: item.quantity + 1 } : item
+      );
+    });
+  }, []);
+
   const incrementItem = useCallback((dishId: string) => {
     commitItems((prev) =>
       prev.map((item) =>
@@ -155,15 +172,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () => ({
       items,
       count: items.reduce((sum, item) => sum + item.quantity, 0),
-      total: items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+      total: items.reduce((sum, item) => {
+        const sides = item.sideDishes?.reduce((s, sd) => s + sd.price, 0) ?? 0;
+        return sum + (item.price + sides) * item.quantity;
+      }, 0),
       addDish,
+      addDishWithSides,
       incrementItem,
       decrementItem,
       setItemNote,
       removeItem,
       clearCart,
     }),
-    [items, addDish, incrementItem, decrementItem, setItemNote, removeItem, clearCart]
+    [items, addDish, addDishWithSides, incrementItem, decrementItem, setItemNote, removeItem, clearCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

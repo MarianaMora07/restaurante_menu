@@ -43,13 +43,19 @@ export function buildOrderWhatsAppUrl(
   lines.push('──────────────');
   let totalUsd = 0;
   for (const item of items) {
-    const subtotal = item.price * item.quantity;
+    const sidesTotal = item.sideDishes?.reduce((s, sd) => s + sd.price, 0) ?? 0;
+    const subtotal = (item.price + sidesTotal) * item.quantity;
     totalUsd += subtotal;
     lines.push(
       `${item.quantity}x ${item.name} — ${formatPrice(subtotal)}${
         rate ? ` · ${formatBolivares(subtotal * rate.rate)}` : ''
       }`
     );
+    if (item.sideDishes && item.sideDishes.length > 0) {
+      for (const side of item.sideDishes) {
+        lines.push(`   ↳ + ${side.name} (${formatPrice(side.price)})`);
+      }
+    }
     const note = item.note?.trim();
     if (note) lines.push(`   ↳ ${note}`);
   }

@@ -15,8 +15,8 @@ interface PromoRowProps {
 export function PromoRow({ promo, isPending, onToggleActive, onEdit }: PromoRowProps) {
   return (
     <div className="flex items-center gap-3 rounded-2xl bg-brand-dark p-3 ring-1 ring-brand-primary/20 sm:gap-4">
-      <div className="relative aspect-[4/3] w-20 shrink-0 overflow-hidden rounded-xl bg-white/[0.06] sm:w-24">
-        <Image src={promo.image_url} alt={promo.title} fill sizes="96px" className="object-cover" />
+      <div className="relative aspect-[4/3] w-14 shrink-0 overflow-hidden rounded-lg bg-white/[0.06] sm:w-16">
+        <Image src={promo.image_url} alt={promo.title} fill sizes="64px" className="object-cover" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold text-brand-light">{promo.title}</p>
