@@ -21,18 +21,25 @@ export async function saveOrder(payload: {
 }): Promise<ActionResult> {
   try {
     const supabase = await createClient();
-    const { error } = await supabase.from('orders').insert({
-      customer_name: payload.customer_name,
-      items: payload.items,
-      total_usd: payload.total_usd,
-      total_bs: payload.total_bs,
-      rate_usd: payload.rate_usd,
-      pickup_type: payload.pickup_type,
-      delivery_zone: payload.delivery_zone ?? null,
-      delivery_cost: payload.delivery_cost ?? 0,
-    });
+    const { data, error } = await supabase
+      .from('orders')
+      .insert({
+        customer_name: payload.customer_name,
+        items: payload.items,
+        total_usd: payload.total_usd,
+        total_bs: payload.total_bs,
+        rate_usd: payload.rate_usd,
+        pickup_type: payload.pickup_type,
+        delivery_zone: payload.delivery_zone ?? null,
+        delivery_cost: payload.delivery_cost ?? 0,
+      })
+      .select()
+      .single();
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error('[saveOrder] Supabase error:', error.message, error.details, error.hint);
+      return { success: false, error: error.message };
+    }
 
     revalidatePath('/dashboard');
     return { success: true };

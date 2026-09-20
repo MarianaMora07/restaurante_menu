@@ -210,32 +210,45 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
                   Contornos Disponibles
                 </h4>
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {dailySides.map((side) => (
-                  <div key={side.id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3.5 py-2.5 ring-1 ring-white/[0.05]">
-                    {side.image_url && (
-                      <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-white/[0.06]">
-                        <Image
-                          src={side.image_url}
-                          alt={side.name}
-                          fill
-                          sizes="40px"
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-brand-light">{side.name}</p>
-                      {side.side_dish_group && (
-                        <p className="text-[10px] text-brand-light/35">{side.side_dish_group}</p>
-                      )}
+              {(() => {
+                const sideGroups = new Map<string, typeof dailySides>();
+                for (const side of dailySides) {
+                  const group = side.side_dish_group || 'Otros';
+                  const list = sideGroups.get(group) ?? [];
+                  list.push(side);
+                  sideGroups.set(group, list);
+                }
+                return Array.from(sideGroups.entries()).map(([groupName, sides]) => (
+                  <div key={groupName} className="mb-4 last:mb-0">
+                    <p className="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-light/35 uppercase">
+                      {groupName}
+                    </p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {sides.map((side) => (
+                        <div key={side.id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3.5 py-2.5 ring-1 ring-white/[0.05]">
+                          {side.image_url && (
+                            <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-white/[0.06]">
+                              <Image
+                                src={side.image_url}
+                                alt={side.name}
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-brand-light">{side.name}</p>
+                          </div>
+                          <span className="shrink-0 text-xs font-semibold text-brand-primary">
+                            +${side.price.toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                    <span className="shrink-0 text-xs font-semibold text-brand-primary">
-                      +${side.price.toFixed(2)}
-                    </span>
                   </div>
-                ))}
-              </div>
+                ));
+              })()}
             </div>
           )}
 

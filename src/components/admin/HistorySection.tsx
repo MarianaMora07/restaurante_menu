@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Bike, Building2, ClipboardList, MapPin } from 'lucide-react';
+import { Bike, Building2, ClipboardList, Download, FileText, MapPin } from 'lucide-react';
 import type { Order } from '@/types/database';
 import { cn, formatBolivares, formatPrice } from '@/lib/utils';
 
@@ -106,6 +106,7 @@ export function HistorySection({ orders }: HistorySectionProps) {
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const { from, to } = useMemo(
     () => getDateRange(period, customFrom, customTo),
@@ -139,13 +140,66 @@ export function HistorySection({ orders }: HistorySectionProps) {
 
   const grouped = useMemo(() => groupByDate(filtered), [filtered]);
 
+  async function handleDownloadPdf() {
+    if (filtered.length === 0) return;
+    setIsGeneratingPdf(true);
+    try {
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      doc.setFontSize(16);
+      doc.text('Reporte de Ventas', pageWidth / 2, 15, { align: 'center' });
+      doc.setFontSize(10);
+      doc.text(formatPeriodLabel(from, to), pageWidth / 2, 22, { align: 'center' });
+      doc.setFontSize(9);
+      doc.text(`Total: ${formatPrice(stats.totalUsd)} | BS: ${formatBolivares(stats.totalBs)} | Tienda: ${stats.tiendaCount} | Delivery: ${stats.deliveryCount}`, pageWidth / 2, 28, { align: 'center' });
+
+      const rows: string[][] = [];
+      for (const order of filtered) {
+        const items = order.items.map((it) => `${it.quantity}x ${it.name}`).join(', ');
+        const sides = order.items.flatMap((it) => it.sideDishes ?? []).map((s) => s.name);
+        const sidesStr = sides.length > 0 ? ` + ${sides.join(', ')}` : '';
+        rows.push([
+          new Date(order.created_at).toLocaleDateString('es-VE'),
+          formatTime(order.created_at),
+          order.customer_name?.trim() || 'Sin nombre',
+          order.pickup_type === 'delivery' ? `Delivery${order.delivery_zone ? ` (${order.delivery_zone})` : ''}` : 'Tienda',
+          items + sidesStr,
+          formatPrice(order.total_usd),
+          order.total_bs != null ? formatBolivares(order.total_bs) : '-',
+        ]);
+      }
+
+      autoTable(doc, {
+        startY: 33,
+        head: [['Fecha', 'Hora', 'Cliente', 'Tipo', 'Detalle', 'USD', 'BS']],
+        body: rows,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [242, 174, 46], textColor: [38, 1, 1] },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { left: 10, right: 10 },
+      });
+
+      doc.save(`reporte-ventas-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err) {
+      console.error('Error generando PDF:', err);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <h2 className="font-heading text-sm font-bold tracking-[0.16em] text-brand-light/50 uppercase">
           Historial de Pedidos
         </h2>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {PERIODS.map((p) => (
             <button
               key={p.value}
@@ -161,6 +215,17 @@ export function HistorySection({ orders }: HistorySectionProps) {
               {p.label}
             </button>
           ))}
+          {filtered.length > 0 && (
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
+              className="flex items-center gap-1.5 rounded-lg bg-brand-accent/15 px-3 py-1.5 text-xs font-semibold text-brand-primary transition-all hover:bg-brand-accent/25 disabled:opacity-50"
+            >
+              <FileText className="size-3.5" aria-hidden />
+              {isGeneratingPdf ? 'Generando...' : 'Descargar reporte'}
+            </button>
+          )}
         </div>
       </div>
 

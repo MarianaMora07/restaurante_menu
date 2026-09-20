@@ -72,6 +72,8 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
       delivery_cost: deliveryCost,
     });
 
+    console.log('[CartSheet] saveOrder result:', result);
+
     if (!result.success) {
       setSaveError(result.error ?? 'No se pudo guardar la orden.');
       setIsSending(false);
