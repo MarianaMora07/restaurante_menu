@@ -20,6 +20,14 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: t
 
 const STATUS_FLOW: OrderStatus[] = ['pending', 'paid', 'preparing', 'ready'];
 
+function getStatus(status: string | undefined): { key: OrderStatus; label: string; color: string; icon: typeof Clock; bg: string } {
+  if (status && STATUS_CONFIG[status as OrderStatus]) {
+    const s = status as OrderStatus;
+    return { key: s, ...STATUS_CONFIG[s] };
+  }
+  return { key: 'pending', ...STATUS_CONFIG.pending };
+}
+
 function formatTime(iso: string): string {
   const d = new Date(iso);
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -146,13 +154,13 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
         <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-white/10 py-14 text-center">
           <Package className="size-8 text-brand-light/15" aria-hidden />
           <p className="text-sm font-medium text-brand-light/40">
-            {filter === 'all' ? 'No hay órdenes registradas.' : `No hay órdenes "${STATUS_CONFIG[filter].label}".`}
+            {filter === 'all' ? 'No hay órdenes registradas.' : `No hay órdenes "${getStatus(filter).label}".`}
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
           {filtered.map((order) => {
-            const cfg = STATUS_CONFIG[order.status];
+            const cfg = getStatus(order.status);
             const Icon = cfg.icon;
             const nextIdx = STATUS_FLOW.indexOf(order.status) + 1;
             const nextStatus = nextIdx < STATUS_FLOW.length ? STATUS_FLOW[nextIdx] : null;
