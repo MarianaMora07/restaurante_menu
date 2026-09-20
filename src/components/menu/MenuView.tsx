@@ -72,7 +72,34 @@ function MenuViewContent({
       const mainDishes = dishes.filter((d) => d.is_daily_menu && !d.is_side_dish);
       const sideDishes = dailySides;
       const result: DishGroup[] = [];
-      if (mainDishes.length > 0) result.push({ id: 'daily-main', name: 'Platos Principales', dishes: mainDishes });
+
+      const grouped = new Map<string, { name: string; dishes: Dish[] }>();
+      for (const dish of mainDishes) {
+        const cat = categories.find((c) => c.id === dish.category_id);
+        const key = cat?.id ?? 'other';
+        const entry = grouped.get(key) ?? { name: cat?.name ?? 'Otros', dishes: [] };
+        entry.dishes.push(dish);
+        grouped.set(key, entry);
+      }
+      const categoryOrder = ['contornos', 'bebidas', 'postres'];
+      const sortedKeys = Array.from(grouped.keys()).sort((a, b) => {
+        const aCat = categories.find((c) => c.id === a);
+        const bCat = categories.find((c) => c.id === b);
+        if (aCat && bCat) {
+          const aIdx = categoryOrder.indexOf(aCat.name.toLowerCase());
+          const bIdx = categoryOrder.indexOf(bCat.name.toLowerCase());
+          if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+          if (aIdx !== -1) return 1;
+          if (bIdx !== -1) return 1;
+          return aCat.display_order - bCat.display_order;
+        }
+        return 0;
+      });
+      for (const key of sortedKeys) {
+        const entry = grouped.get(key)!;
+        result.push({ id: `daily-${key}`, name: entry.name, dishes: entry.dishes });
+      }
+
       if (sideDishes.length > 0) result.push({ id: 'daily-sides', name: 'Contornos del Día', dishes: sideDishes });
       return result;
     }
