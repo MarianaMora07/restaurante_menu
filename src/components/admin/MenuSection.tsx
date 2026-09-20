@@ -37,7 +37,7 @@ export function MenuSection({
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   const filtered = useMemo(() => {
-    let result = dishes;
+    let result = dishes.filter((d) => !d.is_side_dish);
     if (categoryId) result = result.filter((d) => d.category_id === categoryId);
     if (search.trim()) {
       const q = search.toLowerCase();

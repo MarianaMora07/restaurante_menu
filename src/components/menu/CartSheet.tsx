@@ -30,6 +30,7 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
   const [pickupType, setPickupType] = useState<PickupType>('tienda');
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [isSending, setIsSending] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const whatsappReady = Boolean(siteConfig.whatsappNumber);
 
   const selectedZone = deliveryZones.find((z) => z.id === selectedZoneId);
@@ -39,6 +40,7 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
   async function handleConfirm() {
     if (isSending) return;
     setIsSending(true);
+    setSaveError(null);
 
     window.open(
       buildOrderWhatsAppUrl(items, customerName, rate, pickupType, selectedZone?.name, deliveryCost),
@@ -53,7 +55,7 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
     const itemsTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const grandTotal = itemsTotal + sidesTotal + deliveryCost;
 
-    await saveOrder({
+    const result = await saveOrder({
       customer_name: customerName.trim() || null,
       items: items.map((item) => ({
         name: item.name,
@@ -69,6 +71,12 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
       delivery_zone: selectedZone?.name ?? null,
       delivery_cost: deliveryCost,
     });
+
+    if (!result.success) {
+      setSaveError(result.error ?? 'No se pudo guardar la orden.');
+      setIsSending(false);
+      return;
+    }
 
     clearCart();
     setIsSending(false);
@@ -253,6 +261,11 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
                 </p>
               )}
             </div>
+            {saveError && (
+              <p className="rounded-lg bg-red-500/15 px-3 py-2 text-xs font-medium text-red-300 ring-1 ring-red-500/30">
+                {saveError}
+              </p>
+            )}
             <button
               type="button"
               onClick={handleConfirm}
