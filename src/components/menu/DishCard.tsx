@@ -11,9 +11,10 @@ interface DishCardProps {
   rate: UsdRateInfo | null;
   onOpen: (dish: Dish) => void;
   onRequestAdd: (dish: Dish) => void;
+  viewOnly?: boolean;
 }
 
-export function DishCard({ dish, rate, onOpen, onRequestAdd }: DishCardProps) {
+export function DishCard({ dish, rate, onOpen, onRequestAdd, viewOnly }: DishCardProps) {
   const soldOut = !dish.is_available;
 
   return (
@@ -77,16 +78,18 @@ export function DishCard({ dish, rate, onOpen, onRequestAdd }: DishCardProps) {
           rate={rate}
           className="shrink-0 font-heading font-bold text-brand-primary"
         />
-        <button
-          type="button"
-          onClick={() => onRequestAdd(dish)}
-          disabled={soldOut}
-          aria-label={`Agregar ${dish.name} al pedido`}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-accent to-brand-primary px-3.5 font-heading text-xs font-bold text-brand-darker shadow-glow-accent transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:saturate-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-        >
-          <Plus className="size-4" aria-hidden />
-          Agregar
-        </button>
+        {!viewOnly && (
+          <button
+            type="button"
+            onClick={() => onRequestAdd(dish)}
+            disabled={soldOut}
+            aria-label={`Agregar ${dish.name} al pedido`}
+            className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-accent to-brand-primary px-3.5 font-heading text-xs font-bold text-brand-darker shadow-glow-accent transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:saturate-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          >
+            <Plus className="size-4" aria-hidden />
+            Agregar
+          </button>
+        )}
       </div>
     </div>
   );

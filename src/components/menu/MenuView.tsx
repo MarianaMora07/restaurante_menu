@@ -65,7 +65,13 @@ function MenuViewContent({
     [dishes]
   );
 
-  const hasSideDishes = availableSides.length > 0;
+  const EXCLUDED_SIDE_CATEGORIES = ['bebidas', 'postres'];
+
+  const dishCategoryName = (dish: Dish) =>
+    categories.find((c) => c.id === dish.category_id)?.name?.toLowerCase() ?? '';
+
+  const canHaveSides = (dish: Dish) =>
+    !dish.is_side_dish && !EXCLUDED_SIDE_CATEGORIES.includes(dishCategoryName(dish));
 
   const groups = useMemo<DishGroup[]>(() => {
     if (activeCategory === 'daily') {
@@ -102,15 +108,6 @@ function MenuViewContent({
 
       if (sideDishes.length > 0) result.push({ id: 'daily-sides', name: 'Contornos del Día', dishes: sideDishes });
       return result;
-    }
-    if (activeCategory === 'contornos') {
-      return [
-        {
-          id: 'contornos',
-          name: 'Contornos',
-          dishes: availableSides,
-        },
-      ];
     }
     if (activeCategory !== 'all') {
       const category = categories.find((c) => c.slug === activeCategory);
@@ -168,7 +165,6 @@ function MenuViewContent({
           categories={categories}
           activeCategory={activeCategory}
           onSelect={setActiveCategory}
-          hasSideDishes={hasSideDishes}
         />
       </header>
 
@@ -217,8 +213,9 @@ function MenuViewContent({
                       dish={dish}
                       rate={rate}
                       onOpen={setSelectedDish}
+                      viewOnly={dish.is_side_dish}
                       onRequestAdd={(d) => {
-                        if (availableSides.length > 0 && !d.is_side_dish) setSideDishTarget(d);
+                        if (canHaveSides(d)) setSideDishTarget(d);
                         else addDishWithSides(d, []);
                       }}
                     />
@@ -264,7 +261,7 @@ function MenuViewContent({
         rate={rate}
         onClose={() => setSelectedDish(null)}
         onRequestAdd={(d) => {
-          if (availableSides.length > 0 && !d.is_side_dish) {
+          if (canHaveSides(d)) {
             setSelectedDish(null);
             setSideDishTarget(d);
           } else {
