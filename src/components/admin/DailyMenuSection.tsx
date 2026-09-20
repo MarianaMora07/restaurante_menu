@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Check, CalendarDays, Download, Image as ImageIcon, Loader2, Salad } from 'lucide-react';
+import { Check, CalendarDays, Download, Image as ImageIcon, Loader2 } from 'lucide-react';
 import type { Category, Dish, UsdRateInfo } from '@/types/database';
 import { DualPrice } from '@/components/ui/DualPrice';
 import { siteConfig } from '@/config/site';
@@ -143,113 +143,122 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
           </div>
 
           {/* Categorías agrupadas */}
-          {groupedByCategory.map(({ category, dishes: catDishes }) => (
-            <div key={category.id} className="px-8 py-5">
-              <h4 className="mb-4 font-heading text-[11px] font-bold tracking-[0.2em] text-brand-primary/60 uppercase">
-                {category.name}
-              </h4>
-              <div className="flex flex-col gap-5">
-                {catDishes.map((dish) => (
-                  <article key={dish.id} className="flex flex-col gap-3">
-                    <div className="flex gap-4">
-                      {dish.image_url && (
-                        <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-white/[0.06] sm:size-24">
-                          <Image
-                            src={dish.image_url}
-                            alt={dish.name}
-                            fill
-                            sizes="96px"
-                            className="object-cover"
-                          />
+          {groupedByCategory.map(({ category, dishes: catDishes }, catIdx) => (
+            <div key={category.id}>
+              {catIdx > 0 && <div className="mx-8 border-t border-brand-primary/10" />}
+              <div className="px-8 py-5">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="inline-block rounded-full bg-brand-primary/15 px-3 py-1 font-heading text-[10px] font-bold tracking-[0.2em] text-brand-primary uppercase">
+                    {category.name}
+                  </span>
+                  <span className="text-[10px] text-brand-light/25">{catDishes.length} {catDishes.length === 1 ? 'plato' : 'platos'}</span>
+                </div>
+                <div className="flex flex-col gap-4">
+                  {catDishes.map((dish) => (
+                    <article key={dish.id} className="flex flex-col gap-2.5">
+                      <div className="flex gap-4">
+                        {dish.image_url && (
+                          <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-white/[0.06] sm:size-20">
+                            <Image
+                              src={dish.image_url}
+                              alt={dish.name}
+                              fill
+                              sizes="80px"
+                              className="object-cover"
+                            />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
+                            <h5 className="font-heading text-sm font-bold text-brand-light sm:text-base">
+                              {dish.name}
+                            </h5>
+                            <DualPrice
+                              amount={dish.price}
+                              rate={rate}
+                              align="end"
+                              className="shrink-0 text-xs font-bold text-brand-primary sm:text-sm"
+                            />
+                          </div>
+                          {dish.description && (
+                            <p className="mt-1 text-xs leading-relaxed text-brand-light/55 sm:text-sm">
+                              {dish.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {dish.ingredients.length > 0 && (
+                        <div className="flex flex-wrap gap-1 sm:pl-20">
+                          {dish.ingredients.map((ing) => (
+                            <span
+                              key={ing}
+                              className="flex items-center gap-1 rounded-full bg-white/[0.04] px-2 py-0.5 text-[10px] text-brand-light/50 ring-1 ring-white/[0.06]"
+                            >
+                              <Check className="size-2.5 shrink-0 text-brand-primary/60" aria-hidden />
+                              {ing}
+                            </span>
+                          ))}
                         </div>
                       )}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
-                          <h5 className="font-heading text-base font-bold text-brand-light">
-                            {dish.name}
-                          </h5>
-                          <DualPrice
-                            amount={dish.price}
-                            rate={rate}
-                            align="end"
-                            className="shrink-0 text-sm font-bold text-brand-primary"
-                          />
-                        </div>
-                        {dish.description && (
-                          <p className="mt-1.5 text-sm leading-relaxed text-brand-light/60">
-                            {dish.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    {dish.ingredients.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pl-0 sm:pl-24">
-                        {dish.ingredients.map((ing) => (
-                          <span
-                            key={ing}
-                            className="flex items-center gap-1 rounded-full bg-white/[0.05] px-2.5 py-1 text-[11px] text-brand-light/55 ring-1 ring-white/[0.08]"
-                          >
-                            <Check className="size-3 shrink-0 text-brand-primary/70" aria-hidden />
-                            {ing}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                ))}
+                    </article>
+                  ))}
+                </div>
               </div>
             </div>
           ))}
 
           {/* Contornos disponibles */}
           {dailySides.length > 0 && (
-            <div className="border-t border-white/5 bg-brand-dark/30 px-8 py-5">
-              <div className="mb-3 flex items-center gap-2">
-                <Salad className="size-4 text-brand-primary/60" aria-hidden />
-                <h4 className="font-heading text-[11px] font-bold tracking-[0.2em] text-brand-primary/60 uppercase">
-                  Contornos Disponibles
-                </h4>
-              </div>
-              {(() => {
-                const sideGroups = new Map<string, typeof dailySides>();
-                for (const side of dailySides) {
-                  const group = side.side_dish_group || 'Otros';
-                  const list = sideGroups.get(group) ?? [];
-                  list.push(side);
-                  sideGroups.set(group, list);
-                }
-                return Array.from(sideGroups.entries()).map(([groupName, sides]) => (
-                  <div key={groupName} className="mb-4 last:mb-0">
-                    <p className="mb-2 text-[10px] font-semibold tracking-[0.14em] text-brand-light/35 uppercase">
-                      {groupName}
-                    </p>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {sides.map((side) => (
-                        <div key={side.id} className="flex items-center gap-3 rounded-lg bg-white/[0.03] px-3.5 py-2.5 ring-1 ring-white/[0.05]">
-                          {side.image_url && (
-                            <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-white/[0.06]">
-                              <Image
-                                src={side.image_url}
-                                alt={side.name}
-                                fill
-                                sizes="40px"
-                                className="object-cover"
-                              />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-brand-light">{side.name}</p>
+            <>
+              <div className="mx-8 border-t border-brand-primary/10" />
+              <div className="px-8 py-5">
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="inline-block rounded-full bg-brand-primary/15 px-3 py-1 font-heading text-[10px] font-bold tracking-[0.2em] text-brand-primary uppercase">
+                    Contornos
+                  </span>
+                  <span className="text-[10px] text-brand-light/25">{dailySides.length} disponible{dailySides.length !== 1 ? 's' : ''}</span>
+                </div>
+                {(() => {
+                  const sideGroups = new Map<string, typeof dailySides>();
+                  for (const side of dailySides) {
+                    const group = side.side_dish_group || 'Otros';
+                    const list = sideGroups.get(group) ?? [];
+                    list.push(side);
+                    sideGroups.set(group, list);
+                  }
+                  return Array.from(sideGroups.entries()).map(([groupName, sides], idx) => (
+                    <div key={groupName} className={idx > 0 ? 'mt-4' : ''}>
+                      <p className="mb-2 text-[10px] font-semibold tracking-[0.12em] text-brand-light/30 uppercase">
+                        {groupName}
+                      </p>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {sides.map((side) => (
+                          <div key={side.id} className="flex items-center gap-2.5 rounded-lg bg-white/[0.02] px-3 py-2 ring-1 ring-white/[0.04]">
+                            {side.image_url && (
+                              <div className="relative size-8 shrink-0 overflow-hidden rounded-md bg-white/[0.06]">
+                                <Image
+                                  src={side.image_url}
+                                  alt={side.name}
+                                  fill
+                                  sizes="32px"
+                                  className="object-cover"
+                                />
+                              </div>
+                            )}
+                            <span className="min-w-0 flex-1 truncate text-xs font-semibold text-brand-light sm:text-sm">
+                              {side.name}
+                            </span>
+                            <span className="shrink-0 text-[11px] font-bold text-brand-primary">
+                              +${side.price.toFixed(2)}
+                            </span>
                           </div>
-                          <span className="shrink-0 text-xs font-semibold text-brand-primary">
-                            +${side.price.toFixed(2)}
-                          </span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ));
-              })()}
-            </div>
+                  ));
+                })()}
+              </div>
+            </>
           )}
 
           {/* Footer */}
