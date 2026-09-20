@@ -42,12 +42,6 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
     setIsSending(true);
     setSaveError(null);
 
-    window.open(
-      buildOrderWhatsAppUrl(items, customerName, rate, pickupType, selectedZone?.name, deliveryCost),
-      '_blank',
-      'noopener,noreferrer'
-    );
-
     const sidesTotal = items.reduce(
       (sum, item) => sum + (item.sideDishes?.reduce((s, sd) => s + sd.price, 0) ?? 0) * item.quantity,
       0
@@ -55,22 +49,30 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
     const itemsTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const grandTotal = itemsTotal + sidesTotal + deliveryCost;
 
-    const result = await saveOrder({
-      customer_name: customerName.trim() || null,
-      items: items.map((item) => ({
-        name: item.name,
-        price: item.price,
-        quantity: item.quantity,
-        note: item.note?.trim() || undefined,
-        sideDishes: item.sideDishes ?? [],
-      })),
-      total_usd: grandTotal,
-      total_bs: rate ? grandTotal * rate.rate : null,
-      rate_usd: rate?.rate ?? null,
-      pickup_type: pickupType,
-      delivery_zone: selectedZone?.name ?? null,
-      delivery_cost: deliveryCost,
-    });
+    let result;
+    try {
+      result = await saveOrder({
+        customer_name: customerName.trim() || null,
+        items: items.map((item) => ({
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          note: item.note?.trim() || undefined,
+          sideDishes: item.sideDishes ?? [],
+        })),
+        total_usd: grandTotal,
+        total_bs: rate ? grandTotal * rate.rate : null,
+        rate_usd: rate?.rate ?? null,
+        pickup_type: pickupType,
+        delivery_zone: selectedZone?.name ?? null,
+        delivery_cost: deliveryCost,
+      });
+    } catch (err) {
+      console.error('[CartSheet] Error de red al guardar:', err);
+      setSaveError('Error de conexión. Intenta de nuevo.');
+      setIsSending(false);
+      return;
+    }
 
     console.log('[CartSheet] saveOrder result:', result);
 
@@ -79,6 +81,12 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
       setIsSending(false);
       return;
     }
+
+    window.open(
+      buildOrderWhatsAppUrl(items, customerName, rate, pickupType, selectedZone?.name, deliveryCost),
+      '_blank',
+      'noopener,noreferrer'
+    );
 
     clearCart();
     setIsSending(false);

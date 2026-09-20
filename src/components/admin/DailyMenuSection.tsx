@@ -51,7 +51,15 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
     if (orphans.length > 0) {
       groups.push({ category: { id: 'orphans', name: 'Otros', slug: 'otros', display_order: 999, parent_id: null }, dishes: orphans });
     }
-    return groups;
+
+    const BOTTOM = ['bebidas', 'postres'];
+    const main = groups.filter(
+      (g) => !BOTTOM.includes(g.category.name.toLowerCase()) && g.category.name.toLowerCase() !== 'contornos'
+    );
+    const bottom = groups.filter(
+      (g) => BOTTOM.includes(g.category.name.toLowerCase())
+    );
+    return [...main, ...bottom];
   }, [categories, dailyMain]);
 
   const previewRef = useRef<HTMLDivElement>(null);
@@ -83,8 +91,28 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
       const maxY = pageH - footerH - 6;
 
       const brandR = 242, brandG = 174, brandB = 46;
+      const accentR = 242, accentG = 135, accentB = 41;
       const darkR = 38, darkG = 1, darkB = 1;
+      const darkerR = 24, darkerG = 1, darkerB = 1;
+      const cardR = 48, cardG = 8, cardB = 8;
       const lightR = 242, lightG = 242, lightB = 242;
+      const mutedR = 160, mutedG = 160, mutedB = 160;
+      const subtleR = 100, subtleG = 100, subtleB = 100;
+
+      async function loadImageAsBase64(url: string): Promise<string | null> {
+        try {
+          const resp = await fetch(url);
+          const blob = await resp.blob();
+          return await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        } catch {
+          return null;
+        }
+      }
 
       function drawHeader() {
         doc.setFillColor(darkR, darkG, darkB);
@@ -109,7 +137,7 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
         doc.rect(0, pageH - footerH, pageW, footerH, 'F');
         doc.setFillColor(brandR, brandG, brandB);
         doc.rect(0, pageH - footerH, pageW, 0.3, 'F');
-        doc.setTextColor(160, 160, 160);
+        doc.setTextColor(mutedR, mutedG, mutedB);
         doc.setFontSize(6);
         doc.setFont('helvetica', 'normal');
         const rateText = rate
@@ -151,8 +179,20 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
         sideGroups.set(group, list);
       }
 
+      const BOTTOM_CATEGORIES = ['bebidas', 'postres'];
+
+      const mainGroups = groupedByCategory.filter(
+        (g) => !BOTTOM_CATEGORIES.includes(g.category.name.toLowerCase()) && g.category.name.toLowerCase() !== 'contornos'
+      );
+      const bottomGroups = groupedByCategory.filter(
+        (g) => BOTTOM_CATEGORIES.includes(g.category.name.toLowerCase())
+      );
+
       const sections: { title: string; items: typeof groupedByCategory[0][]; isSides?: boolean }[] = [];
-      for (const g of groupedByCategory) {
+      for (const g of mainGroups) {
+        sections.push({ title: g.category.name, items: [g] });
+      }
+      for (const g of bottomGroups) {
         sections.push({ title: g.category.name, items: [g] });
       }
       if (dailySides.length > 0) {
@@ -167,61 +207,116 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
         y = checkPageBreak(y, 14);
         if (y === startY && sIdx > 0) y += 4;
 
+        const badgeText = sectionTitle.toUpperCase();
+        const badgeW = doc.getTextWidth(badgeText) + 10;
         doc.setFillColor(brandR, brandG, brandB);
-        doc.roundedRect(marginX, y - 4, doc.getTextWidth(sectionTitle.toUpperCase()) + 10, 7, 3, 3, 'F');
+        doc.roundedRect(marginX, y - 4, badgeW, 7, 3, 3, 'F');
         doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(brandR, brandG, brandB);
-        doc.text(sectionTitle.toUpperCase(), marginX + 5, y);
+        doc.setTextColor(darkR, darkG, darkB);
+        doc.text(badgeText, marginX + 5, y);
         y += 8;
 
         for (const group of section.items) {
           if (section.isSides) {
             y = checkPageBreak(y, 8);
+            doc.setFillColor(accentR, accentG, accentB);
+            doc.roundedRect(marginX + 2, y - 4, doc.getTextWidth(group.category.name.toUpperCase()) + 8, 6, 2, 2, 'F');
             doc.setFontSize(6);
             doc.setFont('helvetica', 'bold');
-            doc.setTextColor(160, 160, 160);
-            doc.text(group.category.name.toUpperCase(), marginX + 2, y);
-            y += 5;
+            doc.setTextColor(darkR, darkG, darkB);
+            doc.text(group.category.name.toUpperCase(), marginX + 6, y);
+            y += 6;
 
             for (const dish of group.dishes) {
-              y = checkPageBreak(y, 10);
+              const itemH = 10;
+              y = checkPageBreak(y, itemH);
+
+              if (dish.image_url) {
+                const imgData = await loadImageAsBase64(dish.image_url);
+                if (imgData) {
+                  try { doc.addImage(imgData, 'JPEG', marginX + 4, y - 5, 6, 6); } catch { /* skip */ }
+                }
+              }
+              const textX = dish.image_url ? marginX + 12 : marginX + 4;
               doc.setFontSize(9);
               doc.setFont('helvetica', 'bold');
               doc.setTextColor(lightR, lightG, lightB);
-              doc.text(dish.name, marginX + 4, y);
+              doc.text(dish.name, textX, y);
               doc.setFont('helvetica', 'normal');
               doc.setTextColor(brandR, brandG, brandB);
               doc.text(`+$${dish.price.toFixed(2)}`, pageW - marginX, y, { align: 'right' });
               y += 5;
             }
+            y += 2;
           } else {
             for (const dish of group.dishes) {
-              const dishHeight = 12 + (dish.description ? 6 : 0) + (dish.ingredients.length > 0 ? 6 : 0);
-              y = checkPageBreak(y, dishHeight);
+              const dishCardH = 28;
+              y = checkPageBreak(y, dishCardH);
 
-              doc.setFontSize(11);
+              doc.setFillColor(cardR, cardG, cardB);
+              doc.roundedRect(marginX, y - 4, contentW, 26, 2, 2, 'F');
+              doc.setDrawColor(brandR, brandG, brandB);
+              doc.setLineWidth(0.3);
+              doc.roundedRect(marginX, y - 4, contentW, 26, 2, 2, 'S');
+
+              const imgX = marginX + 2;
+              const imgY = y - 2;
+              const imgSize = 22;
+
+              if (dish.image_url) {
+                const imgData = await loadImageAsBase64(dish.image_url);
+                if (imgData) {
+                  try {
+                    doc.addImage(imgData, 'JPEG', imgX, imgY, imgSize, imgSize);
+                  } catch {
+                    doc.setFillColor(subtleR, subtleG, subtleB);
+                    doc.roundedRect(imgX, imgY, imgSize, imgSize, 1, 1, 'F');
+                    doc.setFontSize(5.5);
+                    doc.setFont('helvetica', 'normal');
+                    doc.setTextColor(lightR, lightG, lightB);
+                    doc.text('Sin foto', imgX + imgSize / 2, imgY + imgSize / 2, { align: 'center' });
+                  }
+                } else {
+                  doc.setFillColor(subtleR, subtleG, subtleB);
+                  doc.roundedRect(imgX, imgY, imgSize, imgSize, 1, 1, 'F');
+                  doc.setFontSize(5.5);
+                  doc.setFont('helvetica', 'normal');
+                  doc.setTextColor(lightR, lightG, lightB);
+                  doc.text('Sin foto', imgX + imgSize / 2, imgY + imgSize / 2, { align: 'center' });
+                }
+              } else {
+                doc.setFillColor(subtleR, subtleG, subtleB);
+                doc.roundedRect(imgX, imgY, imgSize, imgSize, 1, 1, 'F');
+                doc.setFontSize(5.5);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(lightR, lightG, lightB);
+                doc.text('Sin foto', imgX + imgSize / 2, imgY + imgSize / 2, { align: 'center' });
+              }
+
+              const textX = marginX + 26;
+              const textMaxW = contentW - 28;
+
+              doc.setFontSize(9);
               doc.setFont('helvetica', 'bold');
               doc.setTextColor(lightR, lightG, lightB);
-              doc.text(dish.name, marginX + 2, y);
-              doc.setFont('helvetica', 'normal');
+              doc.text(dish.name, textX, y + 1);
+              doc.setFontSize(8);
+              doc.setFont('helvetica', 'bold');
               doc.setTextColor(brandR, brandG, brandB);
-              doc.text(`$${dish.price.toFixed(2)}`, pageW - marginX, y, { align: 'right' });
-              y += 5;
+              doc.text(`$${dish.price.toFixed(2)}`, pageW - marginX - 1, y + 1, { align: 'right' });
 
+              let innerY = y + 5;
               if (dish.description) {
-                y = drawTextWrapped(dish.description, marginX + 4, y, contentW - 10, 7, [160, 160, 160]);
-                y += 2;
+                innerY = drawTextWrapped(dish.description, textX, innerY, textMaxW, 6.5, [mutedR, mutedG, mutedB]);
+                innerY += 1;
+              }
+              if (dish.ingredients.length > 0) {
+                const ingText = dish.ingredients.join('  •  ');
+                drawTextWrapped(ingText, textX, innerY, textMaxW, 5.5, [subtleR, subtleG, subtleB]);
               }
 
-              if (dish.ingredients.length > 0) {
-                doc.setFontSize(6);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(130, 130, 130);
-                const ingText = dish.ingredients.map((i) => `• ${i}`).join('  ');
-                y = drawTextWrapped(ingText, marginX + 4, y, contentW - 10, 6, [130, 130, 130]);
-              }
-              y += 4;
+              y += 28;
             }
           }
         }

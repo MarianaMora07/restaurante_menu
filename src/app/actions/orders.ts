@@ -20,7 +20,12 @@ export async function saveOrder(payload: {
   delivery_cost?: number;
 }): Promise<ActionResult> {
   try {
+    console.log('[saveOrder] Iniciando...', JSON.stringify(payload).slice(0, 200));
     const supabase = await createClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    console.log('[saveOrder] Auth user:', user?.id ?? 'anon', authError?.message ?? 'ok');
+
     const { data, error } = await supabase
       .from('orders')
       .insert({
@@ -32,18 +37,21 @@ export async function saveOrder(payload: {
         pickup_type: payload.pickup_type,
         delivery_zone: payload.delivery_zone ?? null,
         delivery_cost: payload.delivery_cost ?? 0,
+        status: 'pending',
       })
       .select()
       .single();
 
     if (error) {
-      console.error('[saveOrder] Supabase error:', error.message, error.details, error.hint);
-      return { success: false, error: error.message };
+      console.error('[saveOrder] ERROR:', error.message, error.details, error.hint, error.code);
+      return { success: false, error: `Supabase: ${error.message} (${error.code})` };
     }
 
+    console.log('[saveOrder] OK, id:', data.id);
     revalidatePath('/dashboard');
     return { success: true };
   } catch (e) {
+    console.error('[saveOrder] EXCEPTION:', e);
     return { success: false, error: e instanceof Error ? e.message : 'Unexpected error' };
   }
 }
@@ -60,7 +68,7 @@ export async function updateOrderStatus(
       .eq('id', orderId);
 
     if (error) {
-      console.error('[updateOrderStatus] Supabase error:', error.message);
+      console.error('[updateOrderStatus] ERROR:', error.message, error.code);
       return { success: false, error: error.message };
     }
 
