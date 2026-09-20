@@ -43,6 +43,8 @@ export interface OrderItem {
   sideDishes?: { id: string; name: string; price: number }[];
 }
 
+export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'ready';
+
 export interface Order {
   id: string;
   customer_name: string | null;
@@ -53,10 +55,11 @@ export interface Order {
   pickup_type: PickupType;
   delivery_zone: string | null;
   delivery_cost: number | null;
+  status: OrderStatus;
   created_at: string;
 }
 
-export type AdminSection = 'menu' | 'rate' | 'promos' | 'categories' | 'contornos' | 'daily-menu' | 'history' | 'delivery-zones';
+export type AdminSection = 'menu' | 'rate' | 'promos' | 'categories' | 'contornos' | 'daily-menu' | 'history' | 'delivery-zones' | 'orders';
 
 export interface OrderPayload {
   dishName: string;

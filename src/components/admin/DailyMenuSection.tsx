@@ -70,21 +70,174 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
     setIsGenerating(true);
     setDlError(null);
     try {
-      const { domToCanvas } = await import('modern-screenshot');
-      const canvas = await domToCanvas(previewRef.current, {
-        backgroundColor: '#260101',
-        scale: 2,
-      });
-      const dataUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `menu-del-dia-${new Date().toISOString().slice(0, 10)}.png`;
-      link.href = dataUrl;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const { jsPDF } = await import('jspdf');
+
+      const doc = new jsPDF({ unit: 'mm', format: 'letter' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const pageH = doc.internal.pageSize.getHeight();
+      const marginX = 15;
+      const contentW = pageW - marginX * 2;
+      const headerH = 32;
+      const footerH = 12;
+      const startY = headerH + 6;
+      const maxY = pageH - footerH - 6;
+
+      const brandR = 242, brandG = 174, brandB = 46;
+      const darkR = 38, darkG = 1, darkB = 1;
+      const lightR = 242, lightG = 242, lightB = 242;
+
+      function drawHeader() {
+        doc.setFillColor(darkR, darkG, darkB);
+        doc.rect(0, 0, pageW, headerH, 'F');
+        doc.setFillColor(brandR, brandG, brandB);
+        doc.rect(0, headerH, pageW, 0.5, 'F');
+        doc.setTextColor(brandR, brandG, brandB);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text(siteConfig.name, pageW / 2, 12, { align: 'center' });
+        doc.setTextColor(lightR, lightG, lightB);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text(today, pageW / 2, 19, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setTextColor(brandR, brandG, brandB);
+        doc.text('M E N U   D E L   D I A', pageW / 2, 26, { align: 'center' });
+      }
+
+      function drawFooter(pageNum: number, totalPages: number) {
+        doc.setFillColor(darkR, darkG, darkB);
+        doc.rect(0, pageH - footerH, pageW, footerH, 'F');
+        doc.setFillColor(brandR, brandG, brandB);
+        doc.rect(0, pageH - footerH, pageW, 0.3, 'F');
+        doc.setTextColor(160, 160, 160);
+        doc.setFontSize(6);
+        doc.setFont('helvetica', 'normal');
+        const rateText = rate
+          ? `Tasa: Bs. ${rate.rate.toFixed(2)} / USD (${rate.source === 'bcv' ? 'BCV' : 'Personalizada'})`
+          : 'Tasa no disponible';
+        doc.text(`Precios en USD  |  ${rateText}  |  ${siteConfig.name}  |  Pagina ${pageNum} de ${totalPages}`, pageW / 2, pageH - footerH + 7, { align: 'center' });
+      }
+
+      function checkPageBreak(currentY: number, needed: number): number {
+        if (currentY + needed > maxY) {
+          doc.addPage();
+          drawHeader();
+          return startY;
+        }
+        return currentY;
+      }
+
+      function drawTextWrapped(text: string, x: number, y: number, maxWidth: number, fontSize: number, color: number[], style: string = 'normal'): number {
+        doc.setFontSize(fontSize);
+        doc.setFont('helvetica', style);
+        doc.setTextColor(...color);
+        const lines = doc.splitTextToSize(text, maxWidth);
+        for (const line of lines) {
+          y = checkPageBreak(y, fontSize * 0.4);
+          doc.text(line, x, y);
+          y += fontSize * 0.4;
+        }
+        return y;
+      }
+
+      drawHeader();
+      let y = startY;
+
+      const sideGroups = new Map<string, typeof dailySides>();
+      for (const side of dailySides) {
+        const group = side.side_dish_group || 'Otros';
+        const list = sideGroups.get(group) ?? [];
+        list.push(side);
+        sideGroups.set(group, list);
+      }
+
+      const sections: { title: string; items: typeof groupedByCategory[0][]; isSides?: boolean }[] = [];
+      for (const g of groupedByCategory) {
+        sections.push({ title: g.category.name, items: [g] });
+      }
+      if (dailySides.length > 0) {
+        const sideEntries = Array.from(sideGroups.entries());
+        sections.push({ title: 'Contornos', items: sideEntries.map(([name, sides]) => ({ category: { id: name, name, slug: name, display_order: 0, parent_id: null }, dishes: sides })), isSides: true });
+      }
+
+      for (let sIdx = 0; sIdx < sections.length; sIdx++) {
+        const section = sections[sIdx];
+        const sectionTitle = section.title;
+
+        y = checkPageBreak(y, 14);
+        if (y === startY && sIdx > 0) y += 4;
+
+        doc.setFillColor(brandR, brandG, brandB);
+        doc.roundedRect(marginX, y - 4, doc.getTextWidth(sectionTitle.toUpperCase()) + 10, 7, 3, 3, 'F');
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(brandR, brandG, brandB);
+        doc.text(sectionTitle.toUpperCase(), marginX + 5, y);
+        y += 8;
+
+        for (const group of section.items) {
+          if (section.isSides) {
+            y = checkPageBreak(y, 8);
+            doc.setFontSize(6);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(160, 160, 160);
+            doc.text(group.category.name.toUpperCase(), marginX + 2, y);
+            y += 5;
+
+            for (const dish of group.dishes) {
+              y = checkPageBreak(y, 10);
+              doc.setFontSize(9);
+              doc.setFont('helvetica', 'bold');
+              doc.setTextColor(lightR, lightG, lightB);
+              doc.text(dish.name, marginX + 4, y);
+              doc.setFont('helvetica', 'normal');
+              doc.setTextColor(brandR, brandG, brandB);
+              doc.text(`+$${dish.price.toFixed(2)}`, pageW - marginX, y, { align: 'right' });
+              y += 5;
+            }
+          } else {
+            for (const dish of group.dishes) {
+              const dishHeight = 12 + (dish.description ? 6 : 0) + (dish.ingredients.length > 0 ? 6 : 0);
+              y = checkPageBreak(y, dishHeight);
+
+              doc.setFontSize(11);
+              doc.setFont('helvetica', 'bold');
+              doc.setTextColor(lightR, lightG, lightB);
+              doc.text(dish.name, marginX + 2, y);
+              doc.setFont('helvetica', 'normal');
+              doc.setTextColor(brandR, brandG, brandB);
+              doc.text(`$${dish.price.toFixed(2)}`, pageW - marginX, y, { align: 'right' });
+              y += 5;
+
+              if (dish.description) {
+                y = drawTextWrapped(dish.description, marginX + 4, y, contentW - 10, 7, [160, 160, 160]);
+                y += 2;
+              }
+
+              if (dish.ingredients.length > 0) {
+                doc.setFontSize(6);
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(130, 130, 130);
+                const ingText = dish.ingredients.map((i) => `• ${i}`).join('  ');
+                y = drawTextWrapped(ingText, marginX + 4, y, contentW - 10, 6, [130, 130, 130]);
+              }
+              y += 4;
+            }
+          }
+        }
+        y += 2;
+      }
+
+      const totalPages = doc.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        drawFooter(i, totalPages);
+      }
+
+      doc.save(`menu-del-dia-${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (err) {
-      console.error('Error generando imagen:', err);
-      setDlError('No se pudo generar la imagen. Intenta de nuevo.');
+      console.error('Error generando PDF:', err);
+      setDlError('No se pudo generar el PDF. Intenta de nuevo.');
     } finally {
       setIsGenerating(false);
     }

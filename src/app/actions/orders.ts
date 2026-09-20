@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import type { OrderItem, PickupType } from '@/types/database';
+import type { OrderItem, OrderStatus, PickupType } from '@/types/database';
 
 interface ActionResult {
   success: boolean;
@@ -38,6 +38,29 @@ export async function saveOrder(payload: {
 
     if (error) {
       console.error('[saveOrder] Supabase error:', error.message, error.details, error.hint);
+      return { success: false, error: error.message };
+    }
+
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : 'Unexpected error' };
+  }
+}
+
+export async function updateOrderStatus(
+  orderId: string,
+  status: OrderStatus
+): Promise<ActionResult> {
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('[updateOrderStatus] Supabase error:', error.message);
       return { success: false, error: error.message };
     }
 

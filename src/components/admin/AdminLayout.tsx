@@ -15,6 +15,7 @@ import { CategoriesSection } from './CategoriesSection';
 import { DailyMenuSection } from './DailyMenuSection';
 import { DeliveryZonesCard } from './DeliveryZonesCard';
 import { HistorySection } from './HistorySection';
+import { OrdersLiveSection } from './OrdersLiveSection';
 import { RateSettingsCard } from './RateSettingsCard';
 
 interface AdminLayoutProps {
@@ -220,6 +221,8 @@ function ContentRouter({
       return <DailyMenuSection categories={categories} dishes={dishes} rate={rateConfig.effective} />;
     case 'history':
       return <HistorySection orders={orders} />;
+    case 'orders':
+      return <OrdersLiveSection initialOrders={orders} />;
     case 'delivery-zones':
       return <DeliveryZonesCard zones={deliveryZones} />;
   }

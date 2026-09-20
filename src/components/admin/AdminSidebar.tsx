@@ -1,6 +1,6 @@
 'use client';
 
-import { LogOut, UtensilsCrossed, Banknote, Megaphone, FolderTree, Salad, CalendarDays, ClipboardList, MapPin, X } from 'lucide-react';
+import { LogOut, UtensilsCrossed, Banknote, Megaphone, FolderTree, Salad, CalendarDays, ClipboardList, MapPin, Bell, X } from 'lucide-react';
 import type { AdminSection } from '@/types/database';
 import { siteConfig } from '@/config/site';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,7 @@ const NAV_ITEMS: { section: AdminSection; label: string; icon: typeof UtensilsCr
   { section: 'categories', label: 'Categorías', icon: FolderTree },
   { section: 'daily-menu', label: 'Menú del Día', icon: CalendarDays },
   { section: 'history', label: 'Historial', icon: ClipboardList },
+  { section: 'orders', label: 'Órdenes', icon: Bell },
   { section: 'delivery-zones', label: 'Zonas Delivery', icon: MapPin },
 ];
 
@@ -32,6 +33,7 @@ const sectionTitles: Record<AdminSection, string> = {
   categories: 'Categorías',
   'daily-menu': 'Generar Menú del Día',
   history: 'Historial de Órdenes',
+  orders: 'Órdenes en Vivo',
   'delivery-zones': 'Zonas de Delivery',
 };
 
