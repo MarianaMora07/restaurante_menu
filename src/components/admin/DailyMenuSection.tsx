@@ -130,7 +130,7 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
       function drawTextWrapped(text: string, x: number, y: number, maxWidth: number, fontSize: number, color: number[], style: string = 'normal'): number {
         doc.setFontSize(fontSize);
         doc.setFont('helvetica', style);
-        doc.setTextColor(...color);
+        doc.setTextColor(color[0], color[1], color[2]);
         const lines = doc.splitTextToSize(text, maxWidth);
         for (const line of lines) {
           y = checkPageBreak(y, fontSize * 0.4);
