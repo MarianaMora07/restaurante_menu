@@ -87,7 +87,10 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
 
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     setProcessingId(orderId);
-    await updateOrderStatus(orderId, newStatus);
+    const result = await updateOrderStatus(orderId, newStatus);
+    if (result.success && result.order) {
+      setOrders((prev) => prev.map((o) => (o.id === orderId ? result.order! : o)));
+    }
     setProcessingId(null);
   }, []);
 

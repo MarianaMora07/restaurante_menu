@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
-import type { OrderItem, OrderStatus, PickupType } from '@/types/database';
+import type { Order, OrderItem, OrderStatus, PickupType } from '@/types/database';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -14,6 +14,7 @@ const supabaseAdmin = createClient(
 interface ActionResult {
   success: boolean;
   error?: string;
+  order?: Order;
 }
 
 export async function saveOrder(payload: {
@@ -64,10 +65,12 @@ export async function updateOrderStatus(
 ): Promise<ActionResult> {
   try {
     const supabase = await createServerClient();
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('orders')
       .update({ status })
-      .eq('id', orderId);
+      .eq('id', orderId)
+      .select()
+      .single();
 
     if (error) {
       console.error('[updateOrderStatus] ERROR:', error.message, error.code);
@@ -75,7 +78,7 @@ export async function updateOrderStatus(
     }
 
     revalidatePath('/dashboard');
-    return { success: true };
+    return { success: true, order: data as Order };
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : 'Unexpected error' };
   }
