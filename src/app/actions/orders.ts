@@ -1,8 +1,13 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import type { OrderItem, OrderStatus, PickupType } from '@/types/database';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface ActionResult {
   success: boolean;
@@ -20,13 +25,8 @@ export async function saveOrder(payload: {
   delivery_cost?: number;
 }): Promise<ActionResult> {
   try {
-    console.log('[saveOrder] Iniciando...', JSON.stringify(payload).slice(0, 200));
-    const supabase = await createClient();
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    console.log('[saveOrder] Auth user:', user?.id ?? 'anon', authError?.message ?? 'ok');
-
-    const { data, error } = await supabase
+    console.log('[saveOrder] Iniciando...');
+    const { data, error } = await supabaseAdmin
       .from('orders')
       .insert({
         customer_name: payload.customer_name,
@@ -43,8 +43,8 @@ export async function saveOrder(payload: {
       .single();
 
     if (error) {
-      console.error('[saveOrder] ERROR:', error.message, error.details, error.hint, error.code);
-      return { success: false, error: `Supabase: ${error.message} (${error.code})` };
+      console.error('[saveOrder] ERROR:', error.message, error.code, error.details);
+      return { success: false, error: `${error.message} (${error.code})` };
     }
 
     console.log('[saveOrder] OK, id:', data.id);
@@ -61,8 +61,7 @@ export async function updateOrderStatus(
   status: OrderStatus
 ): Promise<ActionResult> {
   try {
-    const supabase = await createClient();
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('orders')
       .update({ status })
       .eq('id', orderId);
