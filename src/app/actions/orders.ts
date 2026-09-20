@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
+import { createClient as createServerClient } from '@/lib/supabase/server';
 import type { OrderItem, OrderStatus, PickupType } from '@/types/database';
 
 const supabaseAdmin = createClient(
@@ -62,7 +63,8 @@ export async function updateOrderStatus(
   status: OrderStatus
 ): Promise<ActionResult> {
   try {
-    const { error } = await supabaseAdmin
+    const supabase = await createServerClient();
+    const { error } = await supabase
       .from('orders')
       .update({ status })
       .eq('id', orderId);
