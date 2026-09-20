@@ -21,9 +21,9 @@ export function DishCard({ dish, rate, onOpen, onRequestAdd, viewOnly }: DishCar
     <div className="group flex w-full flex-col overflow-hidden rounded-2xl bg-brand-dark shadow-elevated ring-1 ring-white/[0.06] transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover hover:ring-brand-primary/30 focus-within:ring-brand-primary/50">
       <button
         type="button"
-        onClick={() => onOpen(dish)}
+        onClick={viewOnly ? undefined : () => onOpen(dish)}
         aria-label={`Ver detalles de ${dish.name}`}
-        className="flex flex-1 cursor-pointer flex-col text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary active:scale-[0.97]"
+        className={`flex flex-1 cursor-pointer flex-col text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-primary active:scale-[0.97]${viewOnly ? ' cursor-default' : ''}`}
       >
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-white/[0.04]">
           {dish.image_url ? (

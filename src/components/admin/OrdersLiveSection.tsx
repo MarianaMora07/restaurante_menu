@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bike, Building2, CheckCircle2, Clock, ChefHat, Loader2, MapPin, Package, RefreshCw } from 'lucide-react';
+import { Bike, Building2, CheckCircle2, Clock, ChefHat, Loader2, MapPin, Package, RefreshCw, Send } from 'lucide-react';
 import type { Order, OrderStatus } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { updateOrderStatus } from '@/app/actions/orders';
@@ -16,6 +16,7 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; icon: t
   paid: { label: 'Pagada', color: 'text-blue-400', icon: CheckCircle2, bg: 'bg-blue-500/15 ring-blue-500/30' },
   preparing: { label: 'En Preparación', color: 'text-orange-400', icon: ChefHat, bg: 'bg-orange-500/15 ring-orange-500/30' },
   ready: { label: 'Lista para Entregar', color: 'text-green-400', icon: Package, bg: 'bg-green-500/15 ring-green-500/30' },
+  dispatched: { label: 'Despachada', color: 'text-gray-400', icon: Send, bg: 'bg-gray-500/15 ring-gray-500/30' },
 };
 
 const STATUS_FLOW: OrderStatus[] = ['pending', 'paid', 'preparing', 'ready'];
@@ -95,13 +96,14 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
   }, []);
 
   const filtered = useMemo(() => {
-    if (filter === 'all') return orders;
-    return orders.filter((o) => o.status === filter);
+    const active = orders.filter((o) => o.status !== 'dispatched');
+    if (filter === 'all') return active;
+    return active.filter((o) => o.status === filter);
   }, [orders, filter]);
 
   const counts = useMemo(() => {
-    const c: Record<OrderStatus, number> = { pending: 0, paid: 0, preparing: 0, ready: 0 };
-    for (const o of orders) c[o.status]++;
+    const c: Record<OrderStatus, number> = { pending: 0, paid: 0, preparing: 0, ready: 0, dispatched: 0 };
+    for (const o of orders) if (o.status !== 'dispatched') c[o.status]++;
     return c;
   }, [orders]);
 
@@ -244,8 +246,8 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
                 </div>
 
                 {/* Acciones */}
-                {nextStatus && (
-                  <div className="border-t border-white/[0.04] px-4 py-2.5">
+                <div className="border-t border-white/[0.04] px-4 py-2.5">
+                  {nextStatus ? (
                     <button
                       type="button"
                       disabled={processingId === order.id}
@@ -267,8 +269,28 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
                         </>
                       )}
                     </button>
-                  </div>
-                )}
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={processingId === order.id}
+                      onClick={() => handleStatusChange(order.id, 'dispatched')}
+                      className={cn(
+                        'flex w-full items-center justify-center gap-2 rounded-lg py-2 text-xs font-bold transition-all',
+                        'bg-gray-500/15 text-gray-400 ring-1 ring-gray-500/30 hover:bg-gray-500/25',
+                        'disabled:opacity-50'
+                      )}
+                    >
+                      {processingId === order.id ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : (
+                        <>
+                          <Send className="size-3.5" />
+                          Despachar
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}

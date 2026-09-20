@@ -78,7 +78,8 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
     setIsGenerating(true);
     setDlError(null);
     try {
-      const { jsPDF } = await import('jspdf');
+      const { default: jsPDFModule } = await import('jspdf') as any;
+      const jsPDF = jsPDFModule;
 
       const doc = new jsPDF({ unit: 'mm', format: 'letter' });
       const pageW = doc.internal.pageSize.getWidth();

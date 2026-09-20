@@ -43,7 +43,7 @@ export interface OrderItem {
   sideDishes?: { id: string; name: string; price: number }[];
 }
 
-export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'ready';
+export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'ready' | 'dispatched';
 
 export interface Order {
   id: string;
