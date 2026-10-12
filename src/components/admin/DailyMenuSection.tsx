@@ -2,15 +2,20 @@
 
 import { useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Check, CalendarDays, Download, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Check, CalendarDays, Download, Image as ImageIcon, Loader2, Palette, Trash2, Upload } from 'lucide-react';
+import type { DailyMenuPdfDish, DailyMenuPdfSection } from '@/lib/daily-menu-pdf';
 import type { Category, Dish, UsdRateInfo } from '@/types/database';
 import { DualPrice } from '@/components/ui/DualPrice';
 import { siteConfig } from '@/config/site';
+import { uploadImage } from '@/app/actions/storage';
+import { saveMenuTemplate, deleteMenuTemplate } from '@/app/actions/settings';
 
 interface DailyMenuSectionProps {
   categories: Category[];
   dishes: Dish[];
   rate: UsdRateInfo | null;
+  menuTemplate: string | null;
 }
 
 const CATEGORY_ORDER: Record<string, number> = {
@@ -29,7 +34,8 @@ function sortCategories(categories: Category[]): Category[] {
   });
 }
 
-export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionProps) {
+export function DailyMenuSection({ categories, dishes, rate, menuTemplate }: DailyMenuSectionProps) {
+  const router = useRouter();
   const dailyMain = useMemo(
     () => dishes.filter((d) => d.is_daily_menu && d.is_available && !d.is_side_dish),
     [dishes]
@@ -66,6 +72,64 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
   const [isGenerating, setIsGenerating] = useState(false);
   const [dlError, setDlError] = useState<string | null>(null);
 
+  const templateFileRef = useRef<HTMLInputElement>(null);
+  const [isUploadingTemplate, setIsUploadingTemplate] = useState(false);
+  const [templateError, setTemplateError] = useState<string | null>(null);
+
+  async function handleTemplateUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setTemplateError(null);
+
+    if (!file.type.startsWith('image/')) {
+      setTemplateError('El archivo debe ser una imagen (PNG o JPG).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setTemplateError('La imagen no debe superar 5 MB.');
+      return;
+    }
+
+    setIsUploadingTemplate(true);
+    try {
+      const formData = new FormData();
+      formData.set('file', file);
+      const upload = await uploadImage('menu-templates', formData);
+      if (!upload.success || !upload.url) {
+        setTemplateError(upload.error ?? 'No se pudo subir la plantilla.');
+        return;
+      }
+      const save = await saveMenuTemplate(upload.url);
+      if (!save.success) {
+        setTemplateError(save.error ?? 'No se pudo guardar la plantilla.');
+        return;
+      }
+      router.refresh();
+    } catch {
+      setTemplateError('Error inesperado al subir la plantilla.');
+    } finally {
+      setIsUploadingTemplate(false);
+      if (templateFileRef.current) templateFileRef.current.value = '';
+    }
+  }
+
+  async function handleTemplateDelete() {
+    setTemplateError(null);
+    setIsUploadingTemplate(true);
+    try {
+      const result = await deleteMenuTemplate();
+      if (!result.success) {
+        setTemplateError(result.error ?? 'No se pudo quitar la plantilla.');
+        return;
+      }
+      router.refresh();
+    } catch {
+      setTemplateError('Error inesperado al quitar la plantilla.');
+    } finally {
+      setIsUploadingTemplate(false);
+    }
+  }
+
   const today = new Intl.DateTimeFormat('es-VE', {
     weekday: 'long',
     day: '2-digit',
@@ -74,31 +138,10 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
   }).format(new Date());
 
   async function handleDownloadImage() {
-    if (!previewRef.current) return;
     setIsGenerating(true);
     setDlError(null);
     try {
-      const { default: jsPDFModule } = await import('jspdf') as any;
-      const jsPDF = jsPDFModule;
-
-      const doc = new jsPDF({ unit: 'mm', format: 'letter' });
-      const pageW = doc.internal.pageSize.getWidth();
-      const pageH = doc.internal.pageSize.getHeight();
-      const marginX = 15;
-      const contentW = pageW - marginX * 2;
-      const headerH = 32;
-      const footerH = 12;
-      const startY = headerH + 6;
-      const maxY = pageH - footerH - 6;
-
-      const brandR = 242, brandG = 174, brandB = 46;
-      const accentR = 242, accentG = 135, accentB = 41;
-      const darkR = 38, darkG = 1, darkB = 1;
-      const darkerR = 24, darkerG = 1, darkerB = 1;
-      const cardR = 48, cardG = 8, cardB = 8;
-      const lightR = 242, lightG = 242, lightB = 242;
-      const mutedR = 160, mutedG = 160, mutedB = 160;
-      const subtleR = 100, subtleG = 100, subtleB = 100;
+      const { buildDailyMenuPdf } = await import('@/lib/daily-menu-pdf');
 
       async function loadImageAsBase64(url: string): Promise<string | null> {
         try {
@@ -115,62 +158,26 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
         }
       }
 
-      function drawHeader() {
-        doc.setFillColor(darkR, darkG, darkB);
-        doc.rect(0, 0, pageW, headerH, 'F');
-        doc.setFillColor(brandR, brandG, brandB);
-        doc.rect(0, headerH, pageW, 0.5, 'F');
-        doc.setTextColor(brandR, brandG, brandB);
-        doc.setFontSize(18);
-        doc.setFont('helvetica', 'bold');
-        doc.text(siteConfig.name, pageW / 2, 12, { align: 'center' });
-        doc.setTextColor(lightR, lightG, lightB);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.text(today, pageW / 2, 19, { align: 'center' });
-        doc.setFontSize(7);
-        doc.setTextColor(brandR, brandG, brandB);
-        doc.text('M E N U   D E L   D I A', pageW / 2, 26, { align: 'center' });
-      }
+      const imageById = new Map<string, string>();
+      await Promise.all(
+        dailyMain.map(async (dish) => {
+          if (!dish.image_url) return;
+          const data = await loadImageAsBase64(dish.image_url);
+          if (data) imageById.set(dish.id, data);
+        }),
+      );
 
-      function drawFooter(pageNum: number, totalPages: number) {
-        doc.setFillColor(darkR, darkG, darkB);
-        doc.rect(0, pageH - footerH, pageW, footerH, 'F');
-        doc.setFillColor(brandR, brandG, brandB);
-        doc.rect(0, pageH - footerH, pageW, 0.3, 'F');
-        doc.setTextColor(mutedR, mutedG, mutedB);
-        doc.setFontSize(6);
-        doc.setFont('helvetica', 'normal');
-        const rateText = rate
-          ? `Tasa: Bs. ${rate.rate.toFixed(2)} / USD (${rate.source === 'bcv' ? 'BCV' : 'Personalizada'})`
-          : 'Tasa no disponible';
-        doc.text(`Precios en USD  |  ${rateText}  |  ${siteConfig.name}  |  Pagina ${pageNum} de ${totalPages}`, pageW / 2, pageH - footerH + 7, { align: 'center' });
-      }
+      const templateDataUrl = menuTemplate ? await loadImageAsBase64(menuTemplate) : null;
 
-      function checkPageBreak(currentY: number, needed: number): number {
-        if (currentY + needed > maxY) {
-          doc.addPage();
-          drawHeader();
-          return startY;
-        }
-        return currentY;
+      function toPdfDish(dish: Dish, withImage: boolean): DailyMenuPdfDish {
+        return {
+          name: dish.name,
+          price: dish.price,
+          description: dish.description,
+          ingredients: dish.ingredients,
+          imageDataUrl: withImage ? (imageById.get(dish.id) ?? null) : null,
+        };
       }
-
-      function drawTextWrapped(text: string, x: number, y: number, maxWidth: number, fontSize: number, color: number[], style: string = 'normal'): number {
-        doc.setFontSize(fontSize);
-        doc.setFont('helvetica', style);
-        doc.setTextColor(color[0], color[1], color[2]);
-        const lines = doc.splitTextToSize(text, maxWidth);
-        for (const line of lines) {
-          y = checkPageBreak(y, fontSize * 0.4);
-          doc.text(line, x, y);
-          y += fontSize * 0.4;
-        }
-        return y;
-      }
-
-      drawHeader();
-      let y = startY;
 
       const sideGroups = new Map<string, typeof dailySides>();
       for (const side of dailySides) {
@@ -181,154 +188,44 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
       }
 
       const BOTTOM_CATEGORIES = ['bebidas', 'postres'];
-
       const mainGroups = groupedByCategory.filter(
-        (g) => !BOTTOM_CATEGORIES.includes(g.category.name.toLowerCase()) && g.category.name.toLowerCase() !== 'contornos'
+        (g) => !BOTTOM_CATEGORIES.includes(g.category.name.toLowerCase()) && g.category.name.toLowerCase() !== 'contornos',
       );
-      const bottomGroups = groupedByCategory.filter(
-        (g) => BOTTOM_CATEGORIES.includes(g.category.name.toLowerCase())
+      const bottomGroups = groupedByCategory.filter((g) =>
+        BOTTOM_CATEGORIES.includes(g.category.name.toLowerCase()),
       );
 
-      const sections: { title: string; items: typeof groupedByCategory[0][]; isSides?: boolean }[] = [];
-      for (const g of mainGroups) {
-        sections.push({ title: g.category.name, items: [g] });
-      }
-      for (const g of bottomGroups) {
-        sections.push({ title: g.category.name, items: [g] });
+      const sections: DailyMenuPdfSection[] = [];
+      for (const group of [...mainGroups, ...bottomGroups]) {
+        sections.push({
+          title: group.category.name,
+          layout: 'cards',
+          groups: [{ name: group.category.name, dishes: group.dishes.map((dish) => toPdfDish(dish, true)) }],
+        });
       }
       if (dailySides.length > 0) {
-        const sideEntries = Array.from(sideGroups.entries());
-        sections.push({ title: 'Contornos', items: sideEntries.map(([name, sides]) => ({ category: { id: name, name, slug: name, display_order: 0, parent_id: null }, dishes: sides })), isSides: true });
+        sections.push({
+          title: 'Contornos',
+          layout: 'grid',
+          groups: Array.from(sideGroups.entries()).map(([name, sides]) => ({
+            name,
+            dishes: sides.map((dish) => toPdfDish(dish, false)),
+          })),
+        });
       }
 
-      for (let sIdx = 0; sIdx < sections.length; sIdx++) {
-        const section = sections[sIdx];
-        const sectionTitle = section.title;
+      const rateNote = rate
+        ? `Tasa: Bs. ${rate.rate.toFixed(2)} / USD (${rate.source === 'bcv' ? 'BCV' : 'Personalizada'})`
+        : 'Tasa no disponible';
+      const dateLabel = today.charAt(0).toUpperCase() + today.slice(1);
 
-        y = checkPageBreak(y, 14);
-        if (y === startY && sIdx > 0) y += 4;
-
-        const badgeText = sectionTitle.toUpperCase();
-        const badgeW = doc.getTextWidth(badgeText) + 10;
-        doc.setFillColor(brandR, brandG, brandB);
-        doc.roundedRect(marginX, y - 4, badgeW, 7, 3, 3, 'F');
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(darkR, darkG, darkB);
-        doc.text(badgeText, marginX + 5, y);
-        y += 8;
-
-        for (const group of section.items) {
-          if (section.isSides) {
-            y = checkPageBreak(y, 8);
-            doc.setFillColor(accentR, accentG, accentB);
-            doc.roundedRect(marginX + 2, y - 4, doc.getTextWidth(group.category.name.toUpperCase()) + 8, 6, 2, 2, 'F');
-            doc.setFontSize(6);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(darkR, darkG, darkB);
-            doc.text(group.category.name.toUpperCase(), marginX + 6, y);
-            y += 6;
-
-            for (const dish of group.dishes) {
-              const itemH = 10;
-              y = checkPageBreak(y, itemH);
-
-              if (dish.image_url) {
-                const imgData = await loadImageAsBase64(dish.image_url);
-                if (imgData) {
-                  try { doc.addImage(imgData, 'JPEG', marginX + 4, y - 5, 6, 6); } catch { /* skip */ }
-                }
-              }
-              const textX = dish.image_url ? marginX + 12 : marginX + 4;
-              doc.setFontSize(9);
-              doc.setFont('helvetica', 'bold');
-              doc.setTextColor(lightR, lightG, lightB);
-              doc.text(dish.name, textX, y);
-              doc.setFont('helvetica', 'normal');
-              doc.setTextColor(brandR, brandG, brandB);
-              doc.text(`+$${dish.price.toFixed(2)}`, pageW - marginX, y, { align: 'right' });
-              y += 5;
-            }
-            y += 2;
-          } else {
-            for (const dish of group.dishes) {
-              const dishCardH = 28;
-              y = checkPageBreak(y, dishCardH);
-
-              doc.setFillColor(cardR, cardG, cardB);
-              doc.roundedRect(marginX, y - 4, contentW, 26, 2, 2, 'F');
-              doc.setDrawColor(brandR, brandG, brandB);
-              doc.setLineWidth(0.3);
-              doc.roundedRect(marginX, y - 4, contentW, 26, 2, 2, 'S');
-
-              const imgX = marginX + 2;
-              const imgY = y - 2;
-              const imgSize = 22;
-
-              if (dish.image_url) {
-                const imgData = await loadImageAsBase64(dish.image_url);
-                if (imgData) {
-                  try {
-                    doc.addImage(imgData, 'JPEG', imgX, imgY, imgSize, imgSize);
-                  } catch {
-                    doc.setFillColor(subtleR, subtleG, subtleB);
-                    doc.roundedRect(imgX, imgY, imgSize, imgSize, 1, 1, 'F');
-                    doc.setFontSize(5.5);
-                    doc.setFont('helvetica', 'normal');
-                    doc.setTextColor(lightR, lightG, lightB);
-                    doc.text('Sin foto', imgX + imgSize / 2, imgY + imgSize / 2, { align: 'center' });
-                  }
-                } else {
-                  doc.setFillColor(subtleR, subtleG, subtleB);
-                  doc.roundedRect(imgX, imgY, imgSize, imgSize, 1, 1, 'F');
-                  doc.setFontSize(5.5);
-                  doc.setFont('helvetica', 'normal');
-                  doc.setTextColor(lightR, lightG, lightB);
-                  doc.text('Sin foto', imgX + imgSize / 2, imgY + imgSize / 2, { align: 'center' });
-                }
-              } else {
-                doc.setFillColor(subtleR, subtleG, subtleB);
-                doc.roundedRect(imgX, imgY, imgSize, imgSize, 1, 1, 'F');
-                doc.setFontSize(5.5);
-                doc.setFont('helvetica', 'normal');
-                doc.setTextColor(lightR, lightG, lightB);
-                doc.text('Sin foto', imgX + imgSize / 2, imgY + imgSize / 2, { align: 'center' });
-              }
-
-              const textX = marginX + 26;
-              const textMaxW = contentW - 28;
-
-              doc.setFontSize(9);
-              doc.setFont('helvetica', 'bold');
-              doc.setTextColor(lightR, lightG, lightB);
-              doc.text(dish.name, textX, y + 1);
-              doc.setFontSize(8);
-              doc.setFont('helvetica', 'bold');
-              doc.setTextColor(brandR, brandG, brandB);
-              doc.text(`$${dish.price.toFixed(2)}`, pageW - marginX - 1, y + 1, { align: 'right' });
-
-              let innerY = y + 5;
-              if (dish.description) {
-                innerY = drawTextWrapped(dish.description, textX, innerY, textMaxW, 6.5, [mutedR, mutedG, mutedB]);
-                innerY += 1;
-              }
-              if (dish.ingredients.length > 0) {
-                const ingText = dish.ingredients.join('  •  ');
-                drawTextWrapped(ingText, textX, innerY, textMaxW, 5.5, [subtleR, subtleG, subtleB]);
-              }
-
-              y += 28;
-            }
-          }
-        }
-        y += 2;
-      }
-
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        drawFooter(i, totalPages);
-      }
+      const doc = buildDailyMenuPdf({
+        restaurantName: siteConfig.name,
+        dateLabel,
+        rateNote,
+        templateDataUrl,
+        sections,
+      });
 
       doc.save(`menu-del-dia-${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (err) {
@@ -374,6 +271,71 @@ export function DailyMenuSection({ categories, dishes, rate }: DailyMenuSectionP
           {dlError}
         </p>
       )}
+
+      {/* Gestión de plantilla PNG */}
+      <div className="rounded-2xl bg-brand-dark p-4 ring-1 ring-brand-primary/15">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-brand-primary/10 ring-1 ring-brand-primary/20">
+              <Palette className="size-4 text-brand-primary" aria-hidden />
+            </span>
+            <div>
+              <p className="text-xs font-semibold text-brand-light/70">Plantilla del PDF</p>
+              <p className="text-[11px] text-brand-light/40">
+                {menuTemplate ? 'Plantilla activa — se usa como fondo del PDF.' : 'Diseña un PNG en Canva (carta, 216×279 mm) y súbelo como fondo.'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {menuTemplate && (
+              <div className="relative size-10 overflow-hidden rounded-lg ring-1 ring-white/10">
+                <Image src={menuTemplate} alt="Plantilla" fill sizes="40px" className="object-cover" />
+              </div>
+            )}
+            <input
+              ref={templateFileRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="sr-only"
+              onChange={handleTemplateUpload}
+            />
+            <button
+              type="button"
+              onClick={() => templateFileRef.current?.click()}
+              disabled={isUploadingTemplate}
+              className="flex h-8 items-center gap-1.5 rounded-lg bg-brand-primary/15 px-3 text-[11px] font-bold text-brand-primary ring-1 ring-brand-primary/25 transition-all hover:bg-brand-primary/25 disabled:opacity-50"
+            >
+              {isUploadingTemplate ? (
+                <Loader2 className="size-3 animate-spin" aria-hidden />
+              ) : (
+                <Upload className="size-3" aria-hidden />
+              )}
+              {menuTemplate ? 'Cambiar' : 'Subir PNG'}
+            </button>
+            {menuTemplate && (
+              <button
+                type="button"
+                onClick={handleTemplateDelete}
+                disabled={isUploadingTemplate}
+                className="flex h-8 items-center gap-1 rounded-lg bg-red-500/10 px-2.5 text-[11px] font-bold text-red-400 ring-1 ring-red-500/20 transition-all hover:bg-red-500/20 disabled:opacity-50"
+              >
+                <Trash2 className="size-3" aria-hidden />
+              </button>
+            )}
+          </div>
+        </div>
+        {templateError && (
+          <p role="alert" className="mt-3 rounded-lg bg-red-500/15 px-3 py-2 text-[11px] font-medium text-red-300 ring-1 ring-red-500/30">
+            {templateError}
+          </p>
+        )}
+        {menuTemplate && (
+          <p className="mt-2 text-[10px] leading-relaxed text-brand-light/30">
+            Diseña en Canva con tamaño <strong className="text-brand-light/50">Carta (216×279 mm)</strong>. El sistema dibujará los platos en el centro;
+            deja espacios libres arriba (encabezado) y abajo (pie) sin texto importante.
+          </p>
+        )}
+      </div>
 
       {hasContent ? (
         <div ref={previewRef} className="overflow-hidden rounded-2xl bg-brand-darker ring-1 ring-brand-primary/20">

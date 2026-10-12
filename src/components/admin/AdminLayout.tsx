@@ -3,7 +3,7 @@
 import { useState, useCallback, useOptimistic, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
-import type { Category, DeliveryZone, Dish, Order, Promo, RateConfig, AdminSection } from '@/types/database';
+import type { Category, DeliveryZone, Dish, Order, Promo, RateConfig, RestaurantSchedule, AdminSection } from '@/types/database';
 import { createClient } from '@/lib/supabase/client';
 import { toggleDailyMenu, toggleDishAvailability } from '@/app/actions/dishes';
 import { togglePromoActive } from '@/app/actions/promos';
@@ -17,6 +17,7 @@ import { DeliveryZonesCard } from './DeliveryZonesCard';
 import { HistorySection } from './HistorySection';
 import { OrdersLiveSection } from './OrdersLiveSection';
 import { RateSettingsCard } from './RateSettingsCard';
+import { ScheduleSection } from './ScheduleSection';
 
 interface AdminLayoutProps {
   categories: Category[];
@@ -25,13 +26,14 @@ interface AdminLayoutProps {
   orders: Order[];
   deliveryZones: DeliveryZone[];
   rateConfig: RateConfig;
+  schedule: RestaurantSchedule;
+  menuTemplate: string | null;
 }
 
 type DishFlag = { type: 'dish'; id: string; field: 'is_available' | 'is_daily_menu'; value: boolean };
 type PromoFlag = { type: 'promo'; id: string; value: boolean };
-type FlagUpdate = DishFlag | PromoFlag;
 
-export function AdminLayout({ categories, dishes, promos, orders, deliveryZones, rateConfig }: AdminLayoutProps) {
+export function AdminLayout({ categories, dishes, promos, orders, deliveryZones, rateConfig, schedule, menuTemplate }: AdminLayoutProps) {
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<AdminSection>('menu');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -123,6 +125,8 @@ export function AdminLayout({ categories, dishes, promos, orders, deliveryZones,
             orders={orders}
             deliveryZones={deliveryZones}
             rateConfig={rateConfig}
+            schedule={schedule}
+            menuTemplate={menuTemplate}
             isPending={isPending}
             onDishToggle={handleDishToggle}
             onPromoToggle={handlePromoToggle}
@@ -159,6 +163,8 @@ interface ContentRouterProps {
   orders: Order[];
   deliveryZones: DeliveryZone[];
   rateConfig: RateConfig;
+  schedule: RestaurantSchedule;
+  menuTemplate: string | null;
   isPending: boolean;
   onDishToggle: (dishId: string, field: 'is_available' | 'is_daily_menu', value: boolean, action: typeof toggleDishAvailability) => void;
   onPromoToggle: (promoId: string, value: boolean) => void;
@@ -172,6 +178,8 @@ function ContentRouter({
   orders,
   deliveryZones,
   rateConfig,
+  schedule,
+  menuTemplate,
   isPending,
   onDishToggle,
   onPromoToggle,
@@ -218,12 +226,14 @@ function ContentRouter({
     case 'categories':
       return <CategoriesSection categories={categories} />;
     case 'daily-menu':
-      return <DailyMenuSection categories={categories} dishes={dishes} rate={rateConfig.effective} />;
+      return <DailyMenuSection categories={categories} dishes={dishes} rate={rateConfig.effective} menuTemplate={menuTemplate} />;
     case 'history':
       return <HistorySection orders={orders} />;
     case 'orders':
       return <OrdersLiveSection initialOrders={orders} />;
     case 'delivery-zones':
       return <DeliveryZonesCard zones={deliveryZones} />;
+    case 'schedule':
+      return <ScheduleSection schedule={schedule} />;
   }
 }

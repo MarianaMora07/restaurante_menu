@@ -36,6 +36,7 @@ export interface DeliveryZone {
 }
 
 export interface OrderItem {
+  id?: string;
   name: string;
   price: number;
   quantity: number;
@@ -47,6 +48,8 @@ export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'ready' | 'dispatch
 
 export interface Order {
   id: string;
+  order_number?: number | null;
+  client_token?: string | null;
   customer_name: string | null;
   items: OrderItem[];
   total_usd: number;
@@ -55,11 +58,34 @@ export interface Order {
   pickup_type: PickupType;
   delivery_zone: string | null;
   delivery_cost: number | null;
+  delivery_reference: string | null;
   status: OrderStatus;
   created_at: string;
 }
 
-export type AdminSection = 'menu' | 'rate' | 'promos' | 'categories' | 'contornos' | 'daily-menu' | 'history' | 'delivery-zones' | 'orders';
+export type AdminSection =
+  | 'menu'
+  | 'rate'
+  | 'promos'
+  | 'categories'
+  | 'contornos'
+  | 'daily-menu'
+  | 'history'
+  | 'delivery-zones'
+  | 'orders'
+  | 'schedule';
+
+export interface ScheduleDay {
+  day: number; // 0 = Domingo … 6 = Sábado
+  isOpen: boolean;
+  open: string; // "HH:MM"
+  close: string; // "HH:MM"
+}
+
+export interface RestaurantSchedule {
+  enabled: boolean;
+  days: ScheduleDay[];
+}
 
 export interface OrderPayload {
   dishName: string;
@@ -99,6 +125,8 @@ export interface RateSettings {
 export interface BcvRate {
   rate: number;
   updatedAt: string | null;
+  /** true si la fecha de la tasa quedó 2+ días hábiles atrás (ej: viernes visto el martes). */
+  isStale?: boolean;
 }
 
 export interface UsdRateInfo {
@@ -107,6 +135,7 @@ export interface UsdRateInfo {
   bcvRate: number;
   adjustPercent: number;
   updatedAt: string | null;
+  isStale?: boolean;
 }
 
 export interface RateConfig {

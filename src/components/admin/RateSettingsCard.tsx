@@ -115,6 +115,16 @@ export function RateSettingsCard({ settings, bcv }: RateSettingsCardProps) {
         </p>
       )}
 
+      {bcv?.isStale && (
+        <p
+          role="status"
+          className="rounded-xl bg-amber-500/10 px-4 py-3 text-xs leading-relaxed text-amber-300 ring-1 ring-amber-500/25"
+        >
+          La tasa del BCV no se ha actualizado en 2+ días hábiles (puede ser la del viernes).
+          Verifica la fecha o define un ajuste manual si la tasa real ya cambió.
+        </p>
+      )}
+
       <fieldset className="flex flex-col gap-2.5 sm:flex-row">
         <legend className="sr-only">Modo de cálculo de la tasa</legend>
         {MODE_OPTIONS.map((option) => {

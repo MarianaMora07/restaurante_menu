@@ -1,5 +1,7 @@
 'use server';
 
+import { requireAdmin } from '@/lib/auth';
+
 export interface AiDescriptionResult {
   success: boolean;
   description?: string;
@@ -97,6 +99,7 @@ async function requestGeminiDescription(
 export async function generateDishDescription(
   title: string
 ): Promise<AiDescriptionResult> {
+  await requireAdmin();
   const invalid = validateTitle(title, 'nombre del platillo');
   if (invalid) return invalid;
 
@@ -112,6 +115,7 @@ export async function generateDishDescription(
 export async function generatePromoDescription(
   title: string
 ): Promise<AiDescriptionResult> {
+  await requireAdmin();
   const invalid = validateTitle(title, 'título de la promoción');
   if (invalid) return invalid;
 

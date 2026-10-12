@@ -165,6 +165,7 @@ export function HistorySection({ orders }: HistorySectionProps) {
         const sides = order.items.flatMap((it) => it.sideDishes ?? []).map((s) => s.name);
         const sidesStr = sides.length > 0 ? ` + ${sides.join(', ')}` : '';
         rows.push([
+          order.order_number != null ? `#${String(order.order_number).padStart(4, '0')}` : '-',
           new Date(order.created_at).toLocaleDateString('es-VE'),
           formatTime(order.created_at),
           order.customer_name?.trim() || 'Sin nombre',
@@ -177,7 +178,7 @@ export function HistorySection({ orders }: HistorySectionProps) {
 
       autoTable(doc, {
         startY: 33,
-        head: [['Fecha', 'Hora', 'Cliente', 'Tipo', 'Detalle', 'USD', 'BS']],
+        head: [['#', 'Fecha', 'Hora', 'Cliente', 'Tipo', 'Detalle', 'USD', 'BS']],
         body: rows,
         styles: { fontSize: 8, cellPadding: 2 },
         headStyles: { fillColor: [242, 174, 46], textColor: [38, 1, 1] },
@@ -327,6 +328,11 @@ export function HistorySection({ orders }: HistorySectionProps) {
                         <span className="shrink-0 text-xs font-semibold text-brand-light/40">
                           {formatTime(order.created_at)}
                         </span>
+                        {order.order_number != null && (
+                          <span className="shrink-0 rounded-md bg-brand-primary/15 px-1.5 py-0.5 font-heading text-[11px] font-bold text-brand-primary ring-1 ring-brand-primary/25">
+                            #{String(order.order_number).padStart(4, '0')}
+                          </span>
+                        )}
                         <span className="min-w-0 flex-1 truncate text-sm font-medium text-brand-light">
                           {order.customer_name?.trim() || 'Sin nombre'}
                         </span>
@@ -394,6 +400,11 @@ export function HistorySection({ orders }: HistorySectionProps) {
                           {order.delivery_zone && (order.delivery_cost ?? 0) > 0 && (
                             <p className="text-[11px] text-brand-light/30">
                               Delivery {order.delivery_zone}: +{formatPrice(order.delivery_cost!)}
+                            </p>
+                          )}
+                          {order.pickup_type === 'delivery' && order.delivery_reference?.trim() && (
+                            <p className="text-[11px] text-brand-light/30">
+                              Referencia: {order.delivery_reference}
                             </p>
                           )}
                         </div>

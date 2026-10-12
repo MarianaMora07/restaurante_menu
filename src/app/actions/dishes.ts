@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import type { CreateDishDTO } from '@/types/database';
+import { requireAdmin } from '@/lib/auth';
+import { DishPayloadSchema } from '@/lib/validation';
 
 export interface ActionResult {
   success: boolean;
@@ -15,13 +16,14 @@ async function updateDishFlag(
   value: boolean
 ): Promise<ActionResult> {
   try {
+    await requireAdmin();
     const supabase = await createClient();
     const { error } = await supabase
       .from('dishes')
       .update({ [field]: value })
       .eq('id', dishId);
 
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: 'No se pudo actualizar el plato.' };
 
     revalidatePath('/');
     revalidatePath('/dashboard');
@@ -45,17 +47,21 @@ export async function toggleDailyMenu(
   return updateDishFlag(dishId, 'is_daily_menu', isDaily);
 }
 
-export async function saveDish(
-  payload: CreateDishDTO & { id?: string }
-): Promise<ActionResult> {
+export async function saveDish(payload: unknown): Promise<ActionResult> {
   try {
+    await requireAdmin();
+    const parsed = DishPayloadSchema.safeParse(payload);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' };
+    }
+    const { id, ...dishData } = parsed.data;
+
     const supabase = await createClient();
-    const { id, ...dishData } = payload;
     const { error } = id
       ? await supabase.from('dishes').update(dishData).eq('id', id)
       : await supabase.from('dishes').insert(dishData);
 
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: 'No se pudo guardar el plato.' };
 
     revalidatePath('/');
     revalidatePath('/dashboard');
@@ -67,10 +73,11 @@ export async function saveDish(
 
 export async function deleteDish(dishId: string): Promise<ActionResult> {
   try {
+    await requireAdmin();
     const supabase = await createClient();
     const { error } = await supabase.from('dishes').delete().eq('id', dishId);
 
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: 'No se pudo eliminar el plato.' };
 
     revalidatePath('/');
     revalidatePath('/dashboard');

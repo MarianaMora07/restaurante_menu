@@ -48,6 +48,7 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const prevIdsRef = useRef<Set<string>>(new Set(initialOrders.map((o) => o.id)));
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
 
@@ -88,12 +89,20 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
 
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     setProcessingId(orderId);
-    const result = await updateOrderStatus(orderId, newStatus);
+    const current = orders.find((o) => o.id === orderId);
+    const result = await updateOrderStatus(orderId, newStatus, current?.status);
     if (result.success && result.order) {
       setOrders((prev) => prev.map((o) => (o.id === orderId ? result.order! : o)));
+    } else {
+      // Conflicto de estado: sincronizar con el valor real del servidor.
+      if (result.order) {
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? result.order! : o)));
+      }
+      setErrorMsg(result.error ?? 'No se pudo actualizar la orden.');
+      setTimeout(() => setErrorMsg(null), 5000);
     }
     setProcessingId(null);
-  }, []);
+  }, [orders]);
 
   const filtered = useMemo(() => {
     const active = orders.filter((o) => o.status !== 'dispatched');
@@ -121,6 +130,11 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
       </div>
 
       {/* Filtros de status */}
+      {errorMsg && (
+        <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400 ring-1 ring-red-500/20">
+          {errorMsg}
+        </p>
+      )}
       <div className="flex flex-wrap gap-1.5">
         <button
           type="button"
@@ -186,6 +200,11 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
+                      {order.order_number != null && (
+                        <span className="rounded-md bg-brand-primary/15 px-1.5 py-0.5 font-heading text-[11px] font-bold text-brand-primary ring-1 ring-brand-primary/25">
+                          #{String(order.order_number).padStart(4, '0')}
+                        </span>
+                      )}
                       <span className="text-sm font-bold text-brand-light">
                         {order.customer_name?.trim() || 'Sin nombre'}
                       </span>
@@ -209,6 +228,14 @@ export function OrdersLiveSection({ initialOrders }: OrdersLiveSectionProps) {
                           <span className="flex items-center gap-0.5">
                             <MapPin className="size-2.5" />
                             {order.delivery_zone}
+                          </span>
+                        </>
+                      )}
+                      {order.pickup_type === 'delivery' && order.delivery_reference?.trim() && (
+                        <>
+                          <span>·</span>
+                          <span className="truncate max-w-[140px]" title={order.delivery_reference}>
+                            📍 {order.delivery_reference}
                           </span>
                         </>
                       )}

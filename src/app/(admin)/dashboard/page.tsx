@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { getAllPromos, getCategories, getDeliveryZones, getDishes, getOrders } from '@/lib/supabase/queries';
+import { getAllPromos, getCategories, getDeliveryZones, getDishes, getOrders, getRestaurantSchedule, getMenuTemplate } from '@/lib/supabase/queries';
 import { getRateConfig } from '@/lib/bcv';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 
@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
-  const [{ data: categories }, { data: dishes }, { data: promos }, { data: orders }, { data: deliveryZones }, rateConfig] =
-    await Promise.all([getCategories(), getDishes(), getAllPromos(), getOrders(), getDeliveryZones(), getRateConfig()]);
+  const [{ data: categories }, { data: dishes }, { data: promos }, { data: orders }, { data: deliveryZones }, { data: schedule }, { data: menuTemplate }, rateConfig] =
+    await Promise.all([getCategories(), getDishes(), getAllPromos(), getOrders(), getDeliveryZones(), getRestaurantSchedule(), getMenuTemplate(), getRateConfig()]);
 
   return (
     <AdminLayout
@@ -19,6 +19,8 @@ export default async function DashboardPage() {
       orders={orders}
       deliveryZones={deliveryZones}
       rateConfig={rateConfig}
+      schedule={schedule}
+      menuTemplate={menuTemplate}
     />
   );
 }

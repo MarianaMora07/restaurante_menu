@@ -87,7 +87,7 @@ export default function LoginPage() {
           <label className="relative block">
             <span className="sr-only">Correo electrónico</span>
             <Mail
-              className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-brand-light/70"
+              className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-brand-primary"
               aria-hidden
             />
             <input
@@ -103,7 +103,7 @@ export default function LoginPage() {
           <label className="relative block">
             <span className="sr-only">Contraseña</span>
             <Lock
-              className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-brand-light/70"
+              className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-brand-primary"
               aria-hidden
             />
             <input

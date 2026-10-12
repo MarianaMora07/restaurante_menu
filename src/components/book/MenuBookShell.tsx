@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion/react';
-import type { Category, DeliveryZone, Dish, Promo, UsdRateInfo } from '@/types/database';
+import type { Category, DeliveryZone, Dish, Promo, RestaurantSchedule, UsdRateInfo } from '@/types/database';
 import { LandingView } from '@/components/landing/LandingView';
 import { MenuView } from '@/components/menu/MenuView';
+import { RestaurantClosedView } from '@/components/landing/RestaurantClosedView';
+import { isScheduleOpen } from '@/lib/schedule';
 
 type BookPage = 'landing' | 'menu';
 
@@ -14,6 +16,8 @@ interface MenuBookShellProps {
   dishes: Dish[];
   deliveryZones: DeliveryZone[];
   rate: UsdRateInfo | null;
+  schedule: RestaurantSchedule | null;
+  isAdmin?: boolean;
 }
 
 /* Portada (landing): gira sobre su borde izquierdo como hoja de libro hacia la derecha.
@@ -54,12 +58,21 @@ const fadeVariants: Variants = {
   exit: { opacity: 0 },
 };
 
-export function MenuBookShell({ promos, categories, dishes, deliveryZones, rate }: MenuBookShellProps) {
+export function MenuBookShell({ promos, categories, dishes, deliveryZones, rate, schedule, isAdmin = false }: MenuBookShellProps) {
   const [page, setPage] = useState<BookPage>('landing');
   const prefersReducedMotion = useReducedMotion();
+  // isOpen se calcula en cliente (Intl → America/Caracas) y se re-evalúa cada minuto.
+  const [isOpen, setIsOpen] = useState<boolean | null>(null);
 
   const openMenu = useCallback(() => setPage('menu'), []);
   const closeMenu = useCallback(() => setPage('landing'), []);
+
+  useEffect(() => {
+    const check = () => setIsOpen(isScheduleOpen(schedule));
+    check();
+    const interval = setInterval(check, 60_000);
+    return () => clearInterval(interval);
+  }, [schedule]);
 
   useEffect(() => {
     document.body.classList.toggle('book-menu-open', page === 'menu');
@@ -74,6 +87,12 @@ export function MenuBookShell({ promos, categories, dishes, deliveryZones, rate 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [page, closeMenu]);
+
+  // isOpen === null → aún no se calculó (evita flash de "cerrado" en SSR/hidratación).
+  // isAdmin: el panel logueado omite el bloqueo para previsualizar el menú público.
+  if (isOpen === false && !isAdmin) {
+    return <RestaurantClosedView schedule={schedule} />;
+  }
 
   const cover = prefersReducedMotion ? fadeVariants : coverVariants;
   const sheet = prefersReducedMotion ? fadeVariants : sheetVariants;
@@ -91,7 +110,7 @@ export function MenuBookShell({ promos, categories, dishes, deliveryZones, rate 
             transition={prefersReducedMotion ? { duration: 0.3 } : coverTransition}
             className="relative z-20 [backface-visibility:hidden] [transform-origin:left_center]"
           >
-            <LandingView onOpenMenu={openMenu} />
+            <LandingView onOpenMenu={openMenu} schedule={schedule} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -113,6 +132,7 @@ export function MenuBookShell({ promos, categories, dishes, deliveryZones, rate 
               promos={promos}
               deliveryZones={deliveryZones}
               rate={rate}
+              schedule={schedule}
               onBack={closeMenu}
             />
           </motion.div>

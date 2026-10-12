@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Bike, Building2, MapPin, MessageCircle, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
-import type { CartItem, DeliveryZone, PickupType, UsdRateInfo } from '@/types/database';
+import { useRef, useState } from 'react';
+import { Bike, Building2, CheckCircle2, MapPin, MessageCircle, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
+import type { DeliveryZone, PickupType, UsdRateInfo } from '@/types/database';
 import { buildOrderWhatsAppUrl, cn, formatPrice } from '@/lib/utils';
 import { siteConfig } from '@/config/site';
 import { ModalShell } from '@/components/ui/ModalShell';
@@ -29,9 +29,14 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
   const [customerName, setCustomerName] = useState('');
   const [pickupType, setPickupType] = useState<PickupType>('tienda');
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
+  const [deliveryReference, setDeliveryReference] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const whatsappReady = Boolean(siteConfig.whatsappNumber);
+  // Token de idempotencia: uno por intento de checkout; los reintentos
+  // reutilizan el mismo token y el servidor no duplica la orden.
+  const clientTokenRef = useRef<string | null>(null);
 
   const selectedZone = deliveryZones.find((z) => z.id === selectedZoneId);
   const deliveryCost = pickupType === 'delivery' && selectedZone ? selectedZone.cost : 0;
@@ -42,55 +47,81 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
     setIsSending(true);
     setSaveError(null);
 
-    const sidesTotal = items.reduce(
-      (sum, item) => sum + (item.sideDishes?.reduce((s, sd) => s + sd.price, 0) ?? 0) * item.quantity,
-      0
+    const refTrimmed = deliveryReference.trim();
+    const waUrl = buildOrderWhatsAppUrl(
+      items,
+      customerName,
+      rate,
+      pickupType,
+      selectedZone?.name,
+      deliveryCost,
+      refTrimmed || undefined
     );
-    const itemsTotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const grandTotal = itemsTotal + sidesTotal + deliveryCost;
+
+    // iOS bloquea window.open tras un await: abrir la pestaña de forma síncrona
+    // antes de guardar. Sin "noopener" en features para conservar la referencia
+    // (con noopener window.open retorna null y no se podría asignar la URL).
+    let win: Window | null = null;
+    try {
+      win = window.open('about:blank', '_blank');
+      if (win) {
+        try {
+          win.opener = null;
+        } catch {
+          // Algunos navegadores impiden mutar opener; la navegación igual funciona.
+        }
+      }
+    } catch {
+      win = null;
+    }
 
     let result;
     try {
+      if (!clientTokenRef.current) {
+        clientTokenRef.current = crypto.randomUUID();
+      }
       result = await saveOrder({
+        client_token: clientTokenRef.current,
         customer_name: customerName.trim() || null,
         items: items.map((item) => ({
+          id: item.dishId,
           name: item.name,
           price: item.price,
           quantity: item.quantity,
           note: item.note?.trim() || undefined,
           sideDishes: item.sideDishes ?? [],
         })),
-        total_usd: grandTotal,
-        total_bs: rate ? grandTotal * rate.rate : null,
-        rate_usd: rate?.rate ?? null,
         pickup_type: pickupType,
         delivery_zone: selectedZone?.name ?? null,
-        delivery_cost: deliveryCost,
+        delivery_reference: refTrimmed || null,
       });
-    } catch (err) {
-      console.error('[CartSheet] Error de red al guardar:', err);
+    } catch {
+      if (win && !win.closed) win.close();
       setSaveError('Error de conexión. Intenta de nuevo.');
       setIsSending(false);
       return;
     }
 
-    console.log('[CartSheet] saveOrder result:', result);
-
     if (!result.success) {
+      if (win && !win.closed) win.close();
       setSaveError(result.error ?? 'No se pudo guardar la orden.');
       setIsSending(false);
       return;
     }
 
-    window.open(
-      buildOrderWhatsAppUrl(items, customerName, rate, pickupType, selectedZone?.name, deliveryCost),
-      '_blank',
-      'noopener,noreferrer'
-    );
-
-    clearCart();
+    clientTokenRef.current = null;
     setIsSending(false);
-    onClose();
+
+    if (win && !win.closed) {
+      win.location.href = waUrl;
+      clearCart();
+      onClose();
+    } else {
+      // Popup bloqueado: mostrar enlace visible para que el usuario abra WhatsApp.
+      // El panel de éxito tiene prioridad en el render aunque el carrito esté vacío.
+      clearCart();
+      setWhatsappUrl(waUrl);
+    }
   }
 
   return (
@@ -110,7 +141,36 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
         </button>
       </header>
 
-      {items.length === 0 ? (
+      {whatsappUrl ? (
+        /* Panel de éxito: prioritario aunque el carrito ya esté vacío. */
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-14 text-center">
+          <span className="flex size-14 items-center justify-center rounded-full bg-brand-primary/15 ring-1 ring-brand-primary/30">
+            <CheckCircle2 className="size-7 text-brand-primary" aria-hidden />
+          </span>
+          <p className="text-sm font-medium text-brand-light/70">
+            Orden guardada. Abre WhatsApp para confirmar el pedido.
+          </p>
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-12 w-full max-w-xs items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-accent to-brand-primary font-heading font-bold text-brand-darker shadow-elevated transition-all hover:brightness-110 active:scale-[0.98]"
+          >
+            <MessageCircle className="size-5" aria-hidden />
+            Abrir WhatsApp
+          </a>
+          <button
+            type="button"
+            onClick={() => {
+              setWhatsappUrl(null);
+              onClose();
+            }}
+            className="text-xs font-medium text-brand-light/40 transition-colors hover:text-brand-light"
+          >
+            Cerrar
+          </button>
+        </div>
+      ) : items.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
           <ShoppingBag className="size-10 text-brand-light/15" aria-hidden />
           <p className="text-sm font-medium text-brand-light/50">
@@ -242,6 +302,15 @@ export function CartSheet({ rate, deliveryZones, onClose }: CartSheetProps) {
                     </option>
                   ))}
                 </select>
+                <input
+                  type="text"
+                  value={deliveryReference}
+                  onChange={(e) => setDeliveryReference(e.target.value)}
+                  placeholder="Referencia (ej: casa azul, junto al farmacia)"
+                  maxLength={120}
+                  aria-label="Referencia de entrega"
+                  className="h-10 w-full rounded-xl border border-white/20 bg-white/[0.07] px-3.5 text-sm text-brand-light placeholder:text-brand-light/45 focus:border-brand-accent focus:outline-none"
+                />
               </div>
             )}
 

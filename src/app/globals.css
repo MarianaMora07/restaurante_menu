@@ -89,6 +89,32 @@
     0 0 80px rgb(242 174 46 / 0.22);
 }
 
+/* Partículas de brasa del hero cinematográfico */
+@keyframes ember-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) translateX(0) scale(1);
+  }
+  8% {
+    opacity: 0.85;
+  }
+  70% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-92vh) translateX(var(--drift, 0px)) scale(0.4);
+  }
+}
+
+.ember-particle {
+  animation-name: ember-rise;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  filter: blur(0.5px);
+  box-shadow: 0 0 6px 1px rgb(242 174 46 / 0.35);
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

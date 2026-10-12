@@ -2,24 +2,29 @@
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase/server';
-import type { CreateCategoryDTO } from '@/types/database';
+import { requireAdmin } from '@/lib/auth';
+import { CategoryPayloadSchema } from '@/lib/validation';
 
 interface ActionResult {
   success: boolean;
   error?: string;
 }
 
-export async function saveCategory(
-  payload: CreateCategoryDTO & { id?: string }
-): Promise<ActionResult> {
+export async function saveCategory(payload: unknown): Promise<ActionResult> {
   try {
+    await requireAdmin();
+    const parsed = CategoryPayloadSchema.safeParse(payload);
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues[0]?.message ?? 'Datos inválidos.' };
+    }
+    const { id, ...data } = parsed.data;
+
     const supabase = await createClient();
-    const { id, ...data } = payload;
     const { error } = id
       ? await supabase.from('categories').update(data).eq('id', id)
       : await supabase.from('categories').insert(data);
 
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: 'No se pudo guardar la categoría.' };
     revalidatePath('/dashboard');
     return { success: true };
   } catch (e) {
@@ -29,9 +34,10 @@ export async function saveCategory(
 
 export async function deleteCategory(id: string): Promise<ActionResult> {
   try {
+    await requireAdmin();
     const supabase = await createClient();
     const { error } = await supabase.from('categories').delete().eq('id', id);
-    if (error) return { success: false, error: error.message };
+    if (error) return { success: false, error: 'No se pudo eliminar la categoría.' };
     revalidatePath('/dashboard');
     return { success: true };
   } catch (e) {

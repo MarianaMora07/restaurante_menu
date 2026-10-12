@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from 'react';
@@ -17,6 +18,8 @@ interface CartContextValue {
   items: CartItem[];
   count: number;
   total: number;
+  /** Timestamp del último addDish/addDishWithSides (0 = nunca). Para animaciones. */
+  lastAddEvent: number;
   addDish: (dish: Dish) => void;
   addDishWithSides: (dish: Dish, sideDishes: { id: string; name: string; price: number }[]) => void;
   incrementItem: (dishId: string) => void;
@@ -109,6 +112,7 @@ function commitItems(update: (prev: CartItem[]) => CartItem[]): void {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const items = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [lastAddEvent, setLastAddEvent] = useState(0);
 
   const addDish = useCallback((dish: Dish) => {
     if (!dish.is_available) return;
@@ -121,6 +125,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         item.dishId === dish.id ? { ...item, quantity: item.quantity + 1 } : item
       );
     });
+    setLastAddEvent(Date.now());
   }, []);
 
   const addDishWithSides = useCallback((dish: Dish, sideDishes: { id: string; name: string; price: number }[]) => {
@@ -134,6 +139,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         item.dishId === dish.id ? { ...item, quantity: item.quantity + 1 } : item
       );
     });
+    setLastAddEvent(Date.now());
   }, []);
 
   const incrementItem = useCallback((dishId: string) => {
@@ -176,6 +182,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const sides = item.sideDishes?.reduce((s, sd) => s + sd.price, 0) ?? 0;
         return sum + (item.price + sides) * item.quantity;
       }, 0),
+      lastAddEvent,
       addDish,
       addDishWithSides,
       incrementItem,
@@ -184,7 +191,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem,
       clearCart,
     }),
-    [items, addDish, addDishWithSides, incrementItem, decrementItem, setItemNote, removeItem, clearCart]
+    [items, lastAddEvent, addDish, addDishWithSides, incrementItem, decrementItem, setItemNote, removeItem, clearCart]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

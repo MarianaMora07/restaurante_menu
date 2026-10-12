@@ -1,8 +1,10 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { requireAdmin } from '@/lib/auth';
 
-const ALLOWED_BUCKETS = new Set(['dishes-images', 'promos-images']);
+const ALLOWED_BUCKETS = new Set(['dishes-images', 'promos-images', 'menu-templates']);
+const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'avif']);
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 export interface UploadResult {
@@ -22,12 +24,12 @@ function sanitizeFileName(name: string): string {
   );
 }
 
-function resolveExtension(file: File): string {
+function resolveExtension(file: File): string | null {
   const fromName = file.name.includes('.') ? file.name.split('.').pop() : '';
-  const ext = (fromName || file.type.split('/')[1] || 'jpg')
+  const ext = (fromName || file.type.split('/')[1] || '')
     .toLowerCase()
     .replace(/[^a-z0-9]/g, '');
-  return ext || 'jpg';
+  return ALLOWED_EXTENSIONS.has(ext) ? ext : null;
 }
 
 export async function uploadImage(
@@ -35,6 +37,7 @@ export async function uploadImage(
   formData: FormData
 ): Promise<UploadResult> {
   try {
+    await requireAdmin();
     if (!ALLOWED_BUCKETS.has(bucket)) {
       return { success: false, error: 'Destino de almacenamiento no válido.' };
     }
@@ -49,15 +52,22 @@ export async function uploadImage(
     if (file.size > MAX_IMAGE_BYTES) {
       return { success: false, error: 'La imagen no debe superar los 5 MB.' };
     }
+    const ext = resolveExtension(file);
+    if (!ext) {
+      return { success: false, error: 'Formato no permitido (jpg, png, webp, avif).' };
+    }
 
     const supabase = await createClient();
-    const path = `${Date.now()}-${sanitizeFileName(file.name)}.${resolveExtension(file)}`;
+    const path = `${Date.now()}-${sanitizeFileName(file.name)}.${ext}`;
 
     const { error } = await supabase.storage
       .from(bucket)
       .upload(path, file, { cacheControl: '3600', upsert: false });
 
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      console.error('[storage] upload failed:', { bucket, path, message: error.message });
+      return { success: false, error: 'No se pudo subir la imagen.' };
+    }
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return { success: true, url: data.publicUrl };

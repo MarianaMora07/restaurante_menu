@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import type { Category, DeliveryZone, Dish, Order, Promo, RateSettings } from '@/types/database';
+import type { Category, DeliveryZone, Dish, Order, Promo, RateSettings, RestaurantSchedule } from '@/types/database';
 
 export interface QueryResult<T> {
   data: T;
@@ -142,5 +142,60 @@ export async function getDeliveryZones(): Promise<QueryResult<DeliveryZone[]>> {
     }
   } catch (e) {
     return { data: DEFAULT_DELIVERY_ZONES, error: e instanceof Error ? e.message : 'Unexpected error' };
+  }
+}
+
+export function getDefaultSchedule(): RestaurantSchedule {
+  return {
+    enabled: false,
+    days: [
+      { day: 0, isOpen: true, open: '12:00', close: '23:00' },
+      { day: 1, isOpen: true, open: '11:00', close: '22:00' },
+      { day: 2, isOpen: true, open: '11:00', close: '22:00' },
+      { day: 3, isOpen: true, open: '11:00', close: '22:00' },
+      { day: 4, isOpen: true, open: '11:00', close: '22:00' },
+      { day: 5, isOpen: true, open: '11:00', close: '22:00' },
+      { day: 6, isOpen: true, open: '12:00', close: '23:00' },
+    ],
+  };
+}
+
+export async function getRestaurantSchedule(): Promise<QueryResult<RestaurantSchedule>> {
+  const fallback = getDefaultSchedule();
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'restaurant_schedule')
+      .maybeSingle();
+    if (error || !data) return { data: fallback, error: error?.message ?? null };
+    try {
+      const parsed = JSON.parse(data.value) as RestaurantSchedule;
+      if (typeof parsed.enabled !== 'boolean' || !Array.isArray(parsed.days) || parsed.days.length !== 7) {
+        return { data: fallback, error: null };
+      }
+      const days = [...parsed.days].sort((a, b) => a.day - b.day);
+      return { data: { enabled: parsed.enabled, days }, error: null };
+    } catch {
+      return { data: fallback, error: null };
+    }
+  } catch (e) {
+    return { data: fallback, error: e instanceof Error ? e.message : 'Unexpected error' };
+  }
+}
+
+export async function getMenuTemplate(): Promise<QueryResult<string | null>> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'menu_template_url')
+      .maybeSingle();
+    if (error) return { data: null, error: error.message };
+    return { data: data?.value || null, error: null };
+  } catch (e) {
+    return { data: null, error: e instanceof Error ? e.message : 'Unexpected error' };
   }
 }

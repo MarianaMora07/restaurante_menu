@@ -39,7 +39,8 @@ export function buildOrderWhatsAppUrl(
   rate?: UsdRateInfo | null,
   pickupType?: PickupType,
   deliveryZone?: string,
-  deliveryCost?: number
+  deliveryCost?: number,
+  deliveryReference?: string
 ): string {
   const lines = [`*NUEVO PEDIDO — ${siteConfig.name}*`];
   const name = customerName?.trim();
@@ -49,6 +50,9 @@ export function buildOrderWhatsAppUrl(
     lines.push(`Retiro: ${label}`);
     if (pickupType === 'delivery' && deliveryZone) {
       lines.push(`Zona: ${deliveryZone}${deliveryCost ? ` (+${formatPrice(deliveryCost)})` : ''}`);
+    }
+    if (pickupType === 'delivery' && deliveryReference?.trim()) {
+      lines.push(`Referencia: ${deliveryReference.trim()}`);
     }
   }
 
