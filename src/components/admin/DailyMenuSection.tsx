@@ -10,6 +10,7 @@ import { DualPrice } from '@/components/ui/DualPrice';
 import { siteConfig } from '@/config/site';
 import { uploadImage } from '@/app/actions/storage';
 import { saveMenuTemplate, deleteMenuTemplate } from '@/app/actions/settings';
+import { compressToWebp } from '@/lib/image-compress';
 
 interface DailyMenuSectionProps {
   categories: Category[];
@@ -92,8 +93,10 @@ export function DailyMenuSection({ categories, dishes, rate, menuTemplate }: Dai
 
     setIsUploadingTemplate(true);
     try {
+      // Convertir a WebP comprimido antes de subir
+      const { file: compressedFile } = await compressToWebp(file);
       const formData = new FormData();
-      formData.set('file', file);
+      formData.set('file', compressedFile);
       const upload = await uploadImage('menu-templates', formData);
       if (!upload.success || !upload.url) {
         setTemplateError(upload.error ?? 'No se pudo subir la plantilla.');

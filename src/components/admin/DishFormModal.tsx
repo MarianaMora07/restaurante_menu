@@ -7,6 +7,7 @@ import type { Category, Dish } from '@/types/database';
 import { deleteDish, saveDish } from '@/app/actions/dishes';
 import { generateDishDescription } from '@/app/actions/ai-description';
 import { uploadImage } from '@/app/actions/storage';
+import { compressToWebp } from '@/lib/image-compress';
 import {
   checkboxRowClasses,
   Field,
@@ -29,8 +30,6 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
   const [categoryId, setCategoryId] = useState(dish?.category_id ?? '');
   const [price, setPrice] = useState(dish ? String(dish.price) : '');
   const [description, setDescription] = useState(dish?.description ?? '');
-  const [ingredients, setIngredients] = useState<string[]>(dish?.ingredients ?? []);
-  const [ingredientInput, setIngredientInput] = useState('');
   const [isAvailable, setIsAvailable] = useState(dish?.is_available ?? true);
   const [isDailyMenu, setIsDailyMenu] = useState(dish?.is_daily_menu ?? false);
   const [file, setFile] = useState<File | null>(null);
@@ -52,20 +51,6 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
       return;
     }
     setDescription(result.description);
-  }
-
-  function addIngredient(raw: string) {
-    const parts = raw
-      .split(',')
-      .map((part) => part.trim())
-      .filter(Boolean);
-    if (parts.length === 0) return;
-    setIngredients((prev) => [...new Set([...prev, ...parts])]);
-    setIngredientInput('');
-  }
-
-  function removeIngredient(ingredient: string) {
-    setIngredients((prev) => prev.filter((item) => item !== ingredient));
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -99,8 +84,10 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
     try {
       let imageUrl = dish?.image_url ?? null;
       if (file) {
+        // Convertir a WebP comprimido antes de subir
+        const { file: compressedFile } = await compressToWebp(file);
         const formData = new FormData();
-        formData.set('file', file);
+        formData.set('file', compressedFile);
         const upload = await uploadImage('dishes-images', formData);
         if (!upload.success || !upload.url) {
           setError(upload.error ?? 'No se pudo subir la imagen.');
@@ -115,7 +102,7 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
         category_id: categoryId,
         name: name.trim(),
         description: description.trim() || null,
-        ingredients,
+        ingredients: [],
         price: priceValue,
         image_url: imageUrl,
         is_available: isAvailable,
@@ -254,42 +241,6 @@ export function DishFormModal({ dish, categories, onClose }: DishFormModalProps)
           disabled={isSubmitting}
           placeholder="Descripción breve del plato…"
         />
-
-        <Field
-          label="Ingredientes"
-          hint="Escribe los ingredientes separados por comas. Se mostrarán como etiquetas visuales en la ficha del plato."
-        >
-          <input
-            type="text"
-            value={ingredientInput}
-            onChange={(e) => setIngredientInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ',') {
-                e.preventDefault();
-                addIngredient(ingredientInput);
-              }
-            }}
-            onBlur={() => addIngredient(ingredientInput)}
-            placeholder="Ej: pasta, huevo, parmesano, panceta"
-            className={inputClasses}
-          />
-          {ingredients.length > 0 && (
-            <ul className="mt-2 flex flex-wrap gap-1.5">
-              {ingredients.map((ingredient) => (
-                <li key={ingredient}>
-                  <button
-                    type="button"
-                    onClick={() => removeIngredient(ingredient)}
-                    className="flex items-center gap-1 rounded-full bg-white/[0.07] px-2.5 py-1 text-xs font-medium text-brand-light ring-1 ring-white/10 transition-colors hover:bg-red-500/15 hover:text-red-300 hover:ring-red-500/30"
-                  >
-                    {ingredient}
-                    <X className="size-3" aria-hidden />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Field>
 
         <fieldset className="flex flex-col gap-4 rounded-xl bg-white/[0.03] p-4 ring-1 ring-white/[0.07]">
           <legend className="px-1 font-heading text-xs font-semibold tracking-[0.14em] text-brand-light/60 uppercase">

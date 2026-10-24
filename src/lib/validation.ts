@@ -11,7 +11,7 @@ export const DishPayloadSchema = z.object({
   category_id: z.string().uuid('Categoría inválida'),
   name: z.string().trim().min(1).max(120),
   description: z.string().max(500).nullable(),
-  ingredients: z.array(z.string().max(80)).max(30),
+  ingredients: z.array(z.string().max(80)).max(30).optional().default([]),
   price: z.number().finite().min(0).max(10_000),
   image_url: httpsUrl.nullable(),
   is_available: z.boolean(),

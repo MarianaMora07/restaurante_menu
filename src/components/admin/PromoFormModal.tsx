@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { deletePromo, savePromo } from '@/app/actions/promos';
 import { generatePromoDescription } from '@/app/actions/ai-description';
 import { uploadImage } from '@/app/actions/storage';
+import { compressToWebp } from '@/lib/image-compress';
 import {
   checkboxRowClasses,
   Field,
@@ -99,8 +100,10 @@ export function PromoFormModal({ promo, onClose }: PromoFormModalProps) {
     try {
       let imageUrl = promo?.image_url ?? null;
       if (file) {
+        // Convertir a WebP comprimido antes de subir
+        const { file: compressedFile } = await compressToWebp(file);
         const formData = new FormData();
-        formData.set('file', file);
+        formData.set('file', compressedFile);
         const upload = await uploadImage('promos-images', formData);
         if (!upload.success || !upload.url) {
           setError(upload.error ?? 'No se pudo subir la imagen.');
